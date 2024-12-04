@@ -107,9 +107,15 @@ func SetupDatabase() *gorm.DB {
 		  Colorful:      true,        // Enable color
 		},
 	)
+
+	// Get DSN from environment or use default for development
+	dsn := os.Getenv("DB_DSN")
+	if dsn == "" {
+		// Default for development
+		dsn = "user:12345678@tcp(127.0.0.1:3306)/medic?charset=utf8mb4&parseTime=True&loc=Local"
+	}
 	
-	dsn := "user:12345678@tcp(127.0.0.1:3306)/medic?charset=utf8mb4&parseTime=True&loc=Local"
-  	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: newLogger,})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: newLogger,})
 	  
 	if err != nil {
 	  log.Fatal(err)
