@@ -1,19 +1,35 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
+
+
 func main() {
+	// db connection section
+	db := SetupDatabase()
+
+	// for development only
+	db.AutoMigrate(&Patient{}, &Image{})
+
+	
 	// use godotenv to get .env variables
 	if err := godotenv.Load(); err!= nil { // gogotenv init
 		log.Fatal("load .env error")
 	}
+
+	createUploadsDirectory()
 
 	// ตัวแทนการสื่อสารกับ http server
 	app := fiber.New() // fiber init
@@ -28,41 +44,46 @@ func main() {
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
-	// for test without database server
-	patients = append(patients, Patient{
-		ID:    ptrInt(1),
-		Name:  ptrString("John Doe"),
-		Email: ptrString("johndoe@gmail.com"),
-		Age:   ptrInt(60),
-	})
-	patients = append(patients, Patient{
-		ID:    ptrInt(2),
-		Name:  ptrString("Lorem Ipsum"),
-		Email: ptrString("loremipsum@gmail.com"),
-		Age:   ptrInt(49),
-	})
 						// c = response and request fiber context
 	app.Get("/hello" , func(c *fiber.Ctx) error {return c.SendString("test gogo")})
 
 	// test route 
-	app.Get("/patient", getPatients) 
-	app.Get("/patient/:id", getPatientID)
-	app.Post("/patient", createPatient)
-	app.Put("/patient/:id", updatePatient)
-	app.Delete("/patient/:id", deletePatient)
-	app.Post("/upload", uploadImage)
+	app.Get("/patient", func(c *fiber.Ctx) error {
+		return getPatients(db, c)
+	  })
+	app.Get("/patient/:id", func(c *fiber.Ctx) error {
+		return getPatientID(db, c)
+	  })
+	app.Post("/patient", func(c *fiber.Ctx) error {
+		return createPatient(db, c)
+	  })
+	app.Put("/patient/:id", func(c *fiber.Ctx) error {
+		return updatePatient(db, c)
+	  })
+	app.Delete("/patient/:id", func(c *fiber.Ctx) error {
+		return deletePatient(db, c)
+	  })
+	  app.Post("/patient/:id/images", func(c *fiber.Ctx) error {
+		return uploadImage(db, c)
+	})
+	app.Get("/patient/:id/images", func(c *fiber.Ctx) error {
+		return getPatientImages(db, c)
+	})
+	
+	
 	app.Get("/config", getENV)
 
 	app.Listen(":8080")
+
 }
 
 func ptrString(s string) *string {
 	return &s
 }
 
-func ptrInt(i int) *int {
-	return &i
-}
+// func ptrInt(i int) *int {
+// 	return &i
+// }
 
 func getENV (c *fiber.Ctx) error {
 	
@@ -74,4 +95,34 @@ func getENV (c *fiber.Ctx) error {
 		"SECRET": secret,
 	})
 
+}
+
+func SetupDatabase() *gorm.DB {
+	// New logger for detailed SQL logging
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+		  SlowThreshold: time.Second, // Slow SQL threshold
+		  LogLevel:      logger.Info, // Log level
+		  Colorful:      true,        // Enable color
+		},
+	)
+	
+	dsn := "user:12345678@tcp(127.0.0.1:3306)/medic?charset=utf8mb4&parseTime=True&loc=Local"
+  	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: newLogger,})
+	  
+	if err != nil {
+	  log.Fatal(err)
+	}
+  
+	
+	fmt.Println("Successfully DB connected!")
+  
+	return db
+  }
+
+  func createUploadsDirectory() {
+	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
+		os.Mkdir("./uploads", os.ModePerm)
+	}
 }
