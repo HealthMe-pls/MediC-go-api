@@ -39,7 +39,7 @@ func main() {
 
 	// Apply CORS middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*", // Adjust this to be more restrictive if needed
+		AllowOrigins: "http://167.172.70.131, http://localhost, http://127.0.0.1", // Adjust this to be more restrictive if needed
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
@@ -114,7 +114,7 @@ func SetupDatabase() *gorm.DB {
 		// Default for development
 		dsn = "user:12345678@tcp(127.0.0.1:3306)/medic?charset=utf8mb4&parseTime=True&loc=Local"
 	}
-	
+
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: newLogger,})
 	  
 	if err != nil {
