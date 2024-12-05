@@ -39,7 +39,7 @@ func main() {
 
 	// Apply CORS middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
+		AllowOrigins: "http://localhost:3000, http://127.0.0.1:3000, http://localhost, http://192.168.64.4:3000, http://192.168.64.4",
 		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 		AllowHeaders: "Origin, Content-Type, Accept",
 		AllowCredentials: true, // If you are using cookies or credentials
@@ -64,7 +64,6 @@ func main() {
 		return getPatientID(db, c)
 	  })
 	app.Post("/patient", func(c *fiber.Ctx) error {
-		log.Printf("Request Body: %s", string(c.Body()))
 		return createPatient(db, c)
 	  })
 	app.Put("/patient/:id", func(c *fiber.Ctx) error {
