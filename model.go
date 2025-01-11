@@ -6,21 +6,23 @@ import (
 	"gorm.io/gorm"
 )
 
+// Patient represents the Patient table
 type Patient struct {
 	gorm.Model
-	ID *int `json:"ID"`
-	Name *string `json:"Name"`
-	Email *string `json:"Email"`
-	Age *int `json:"Age"`
-	Images []Image
+	ID    *int    `json:"id"`
+	Name  *string `json:"name"`
+	Email *string `json:"email"`
+	Age   *int    `json:"age"`
+	Images []Image `json:"images"`
 }
 
+// Image represents the Image table
 type Image struct {
 	gorm.Model
-	ID        *int    `json:"ID"`
-	PatientID *int    `json:"PatientID"`
-	ImagePath *string `json:"ImagePath"`
-	Patient   Patient `gorm:"foreignKey:PatientID"`
+	ID        *int    `json:"id"`
+	PatientID *int    `json:"patient_id"`
+	ImagePath *string `json:"image_path"`
+	Patient   Patient `gorm:"foreignKey:PatientID" json:"patient"`
 }
 
 // Admin represents the Admin table
@@ -36,121 +38,118 @@ type Admin struct {
 // Entrepreneur represents the Entrepreneur table
 type Entrepreneur struct {
 	gorm.Model
-	Username    string `gorm:"unique"` // ทำให้ Username เป็น unique แต่ไม่ต้องเป็น primary key
-	Password    string
-	PhoneNumber string
-	Title       string
-	FirstName   string
-	MiddleName  string
-	LastName    string
-	Shops       []Shop `gorm:"foreignKey:EntrepreneurID"` // เชื่อมโยงกับ Shop ผ่าน EntrepreneurID
+	Username    string `gorm:"unique" json:"username"`
+	Password    string `json:"password"`
+	PhoneNumber string `json:"phone_number"`
+	Title       string `json:"title"`
+	FirstName   string `json:"first_name"`
+	MiddleName  string `json:"middle_name"`
+	LastName    string `json:"last_name"`
+	Shops       []Shop `gorm:"foreignKey:EntrepreneurID" json:"shops"`
 }
 
 // Shop represents the Shop table
 type Shop struct {
 	gorm.Model
-	ID               uint         `gorm:"primaryKey"`
-	Name             string
-	ShopCategoryID   uint         `gorm:"not null"`
-	ShopCategory     ShopCategory `gorm:"foreignKey:ShopCategoryID"`
-	Status           bool
-	FullDescription  string
-	BriefDescription string
-	EntrepreneurID   uint         `gorm:"not null"` // ใช้เป็น Foreign Key ที่อ้างอิงไปที่ Entrepreneur ID
-	// Entrepreneur     Entrepreneur `gorm:"foreignKey:EntrepreneurID;references:id"` // ใช้ EntrepreneurID เชื่อมกับ Entrepreneur ID
-	ShopOpenDates    []ShopOpenDate `gorm:"foreignKey:ShopID"`
-	ShopMenus        []ShopMenu     `gorm:"foreignKey:ShopID"`
-	SocialMedia      []SocialMedia  `gorm:"foreignKey:ShopID"`
-	Photos           []Photo        `gorm:"foreignKey:ShopID"`
+	ID               uint         `gorm:"primaryKey" json:"id"`
+	Name             string       `json:"name"`
+	ShopCategoryID   uint         `gorm:"not null" json:"shop_category_id"`
+	ShopCategory     ShopCategory `gorm:"foreignKey:ShopCategoryID" json:"shop_category"`
+	Status           bool         `json:"status"`
+	FullDescription  string       `json:"full_description"`
+	BriefDescription string       `json:"brief_description"`
+	EntrepreneurID   uint         `gorm:"not null" json:"entrepreneur_id"`
+	ShopOpenDates    []ShopOpenDate `gorm:"foreignKey:ShopID" json:"shop_open_dates"`
+	ShopMenus        []ShopMenu     `gorm:"foreignKey:ShopID" json:"shop_menus"`
+	SocialMedia      []SocialMedia  `gorm:"foreignKey:ShopID" json:"social_media"`
+	Photos           []Photo        `gorm:"foreignKey:ShopID" json:"photos"`
 }
 
-// ShopCategory represents the Shop_Category table
+// ShopCategory represents the ShopCategory table
 type ShopCategory struct {
 	gorm.Model
-	ID   uint   `gorm:"primaryKey"`
-	Name string
-	Shops []Shop `gorm:"foreignKey:ShopCategoryID"`
+	ID   uint   `gorm:"primaryKey" json:"id"`
+	Name string `json:"name"`
+	Shops []Shop `gorm:"foreignKey:ShopCategoryID" json:"shops"`
 }
 
 // ShopOpenDate represents the ShopOpenDate table
 type ShopOpenDate struct {
-	ID             uint            `gorm:"primaryKey"`
-	StartTime      time.Time
-	EndTime        time.Time
-	ShopID         uint            `gorm:"not null"`
-	MarketOpenDateID uint          `gorm:"not null"` // เชื่อมโยงกับ MarketOpenDateID
-	Shop           Shop            `gorm:"foreignKey:ShopID"`
-	MarketOpenDate MarketOpenDate `gorm:"foreignKey:MarketOpenDateID"` // เชื่อมโยงกับ MarketOpenDate
+	ID              uint            `gorm:"primaryKey" json:"id"`
+	StartTime       time.Time       `json:"start_time"`
+	EndTime         time.Time       `json:"end_time"`
+	ShopID          uint            `gorm:"not null" json:"shop_id"`
+	MarketOpenDateID uint           `gorm:"not null" json:"market_open_date_id"`
+	Shop            Shop            `gorm:"foreignKey:ShopID" json:"shop"`
+	MarketOpenDate  MarketOpenDate `gorm:"foreignKey:MarketOpenDateID" json:"market_open_date"`
 }
 
 // MarketOpenDate represents the MarketOpenDate table
 type MarketOpenDate struct {
-	ID            uint           `gorm:"primaryKey"`
-	Date          time.Time      `gorm:"type:date"`
-	StartTime     time.Time
-	EndTime       time.Time
-	ShopOpenDates []ShopOpenDate `gorm:"foreignKey:MarketOpenDateID"` // เชื่อมโยงกลับกับ ShopOpenDate
+	ID            uint           `gorm:"primaryKey" json:"id"`
+	Date          time.Time      `gorm:"type:date" json:"date"`
+	StartTime     time.Time      `json:"start_time"`
+	EndTime       time.Time      `json:"end_time"`
+	ShopOpenDates []ShopOpenDate `gorm:"foreignKey:MarketOpenDateID" json:"shop_open_dates"`
 }
 
 // MarketMap represents the MarketMap table
 type MarketMap struct {
-	BlockID uint `gorm:"primaryKey"` // ใช้ BlockID เป็น Primary Key
-	ShopID  uint `gorm:"not null"`
-	Shop    Shop `gorm:"foreignKey:ShopID"`
+	BlockID uint `gorm:"primaryKey" json:"block_id"`
+	ShopID  uint `gorm:"not null" json:"shop_id"`
+	Shop    Shop `gorm:"foreignKey:ShopID" json:"shop"`
 }
-
 
 // SocialMedia represents the SocialMedia table
 type SocialMedia struct {
 	gorm.Model
-	ID       uint   `gorm:"primaryKey"`
-	Platform string
-	Link     string
-	ShopID   uint   `gorm:"not null"`
-	Shop     Shop   `gorm:"foreignKey:ShopID"`
+	ID       uint   `gorm:"primaryKey" json:"id"`
+	Platform string `json:"platform"`
+	Link     string `json:"link"`
+	ShopID   uint   `gorm:"not null" json:"shop_id"`
+	Shop     Shop   `gorm:"foreignKey:ShopID" json:"shop"`
 }
 
 // ShopMenu represents the ShopMenu table
 type ShopMenu struct {
 	gorm.Model
-	ID                 uint    `gorm:"primaryKey"`
-	ProductDescription string
-	Price              float64
-	ProductName        string
-	ShopID             uint    `gorm:"not null"`
-	Shop               Shop    `gorm:"foreignKey:ShopID"`
-	Photo              Photo   `gorm:"foreignKey:MenuID"` // ชี้ไปยังฟิลด์ MenuID ของ Photo
+	ID                 uint    `gorm:"primaryKey" json:"id"`
+	ProductDescription string  `json:"product_description"`
+	Price              float64 `json:"price"`
+	ProductName        string  `json:"product_name"`
+	ShopID             uint    `gorm:"not null" json:"shop_id"`
+	Shop               Shop    `gorm:"foreignKey:ShopID" json:"shop"`
+	Photo              Photo   `gorm:"foreignKey:MenuID" json:"photo"`
 }
 
 // Photo represents the Photo table
 type Photo struct {
-    gorm.Model
-    ID            uint   `gorm:"primaryKey"`
-    PhotoCategory string
-    PathFile      string
-    MenuID        *uint
-    WorkshopName  string `gorm:"size:255"` // ใช้ VARCHAR แทน LONGTEXT
-    ShopID        *uint
+	gorm.Model
+	ID            uint   `gorm:"primaryKey" json:"id"`
+	PhotoCategory string `json:"photo_category"`
+	PathFile      string `json:"path_file"`
+	MenuID        *uint  `json:"menu_id"`
+	WorkshopName  string `gorm:"size:255" json:"workshop_name"`
+	ShopID        *uint  `json:"shop_id"`
 }
-
 
 // Workshop represents the Workshop table
 type Workshop struct {
-	Name        string    `gorm:"primaryKey"`
-	Description string
-	Price       float64
-	Language    string
-	Instructor  string
-	StartTime   time.Time
-	EndTime     time.Time
-	Date        time.Time `gorm:"type:date"`
-	Photos      []Photo `gorm:"foreignKey:WorkshopName"`
+	Name        string    `gorm:"primaryKey" json:"name"`
+	Description string    `json:"description"`
+	Price       float64   `json:"price"`
+	Language    string    `json:"language"`
+	Instructor  string    `json:"instructor"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	Date        time.Time `gorm:"type:date" json:"date"`
+	Photos      []Photo   `gorm:"foreignKey:WorkshopName" json:"photos"`
 }
 
 // ContactToAdmin represents the ContactToAdmin table
 type ContactToAdmin struct {
-	ID          uint   `gorm:"primaryKey"`
-	Problem     string
-	FromUsername string
-	Detail      string
+	ID          uint   `gorm:"primaryKey" json:"id"`
+	Problem     string `json:"problem"`
+	FromUsername string `json:"from_username"`
+	Detail      string `json:"detail"`
 }
