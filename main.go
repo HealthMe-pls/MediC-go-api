@@ -72,35 +72,37 @@ func main() {
 
 	// test route
 	app.Get("/patient", func(c *fiber.Ctx) error {
-		return controller.GetPatients(db)(c)
+		return controller.GetPatients(db, c)
 	})
+
 	app.Get("/patient/:id", func(c *fiber.Ctx) error {
-		return controller.GetPatientID(db)(c)
+		return controller.GetPatientID(db, c)
 	})
+
 	app.Post("/patient", func(c *fiber.Ctx) error {
-		return controller.CreatePatient(db)(c)
+		return controller.CreatePatient(db, c)
 	})
+
 	app.Put("/patient/:id", func(c *fiber.Ctx) error {
-		return controller.UpdatePatient(db)(c)
+		return controller.UpdatePatient(db, c)
 	})
+
 	app.Delete("/patient/:id", func(c *fiber.Ctx) error {
-		return controller.DeletePatient(db)(c)
+		return controller.DeletePatient(db, c)
 	})
+
 	app.Post("/patient/:id/images", func(c *fiber.Ctx) error {
-		return controller.UploadImage(db)(c)
+		return controller.UploadImage(db, c)
 	})
+
 	app.Get("/patient/:id/images", func(c *fiber.Ctx) error {
-		return controller.GetPatientImages(db)(c)
+		return controller.GetPatientImages(db, c)
 	})
 
 	app.Get("/config", getENV)
 
 	app.Listen(":8080")
 
-}
-
-func ptrString(s string) *string {
-	return &s
 }
 
 // func ptrInt(i int) *int {
