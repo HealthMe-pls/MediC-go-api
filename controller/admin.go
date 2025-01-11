@@ -1,9 +1,12 @@
-package main
+package controller
 
 import (
+	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
+
+type Admin = model.Admin
 
 // Get all Admins
 func GetAdmins(db *gorm.DB) fiber.Handler {

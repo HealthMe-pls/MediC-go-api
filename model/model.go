@@ -1,4 +1,4 @@
-package main
+package model
 
 import (
 	"time"
@@ -9,10 +9,10 @@ import (
 // Patient represents the Patient table
 type Patient struct {
 	gorm.Model
-	ID    *int    `json:"id"`
-	Name  *string `json:"name"`
-	Email *string `json:"email"`
-	Age   *int    `json:"age"`
+	ID     *int    `json:"id"`
+	Name   *string `json:"name"`
+	Email  *string `json:"email"`
+	Age    *int    `json:"age"`
 	Images []Image `json:"images"`
 }
 
@@ -51,14 +51,14 @@ type Entrepreneur struct {
 // Shop represents the Shop table
 type Shop struct {
 	gorm.Model
-	ID               uint         `gorm:"primaryKey" json:"id"`
-	Name             string       `json:"name"`
-	ShopCategoryID   uint         `gorm:"not null" json:"shop_category_id"`
-	ShopCategory     ShopCategory `gorm:"foreignKey:ShopCategoryID" json:"shop_category"`
-	Status           bool         `json:"status"`
-	FullDescription  string       `json:"full_description"`
-	BriefDescription string       `json:"brief_description"`
-	EntrepreneurID   uint         `gorm:"not null" json:"entrepreneur_id"`
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	Name             string         `json:"name"`
+	ShopCategoryID   uint           `gorm:"not null" json:"shop_category_id"`
+	ShopCategory     ShopCategory   `gorm:"foreignKey:ShopCategoryID" json:"shop_category"`
+	Status           bool           `json:"status"`
+	FullDescription  string         `json:"full_description"`
+	BriefDescription string         `json:"brief_description"`
+	EntrepreneurID   uint           `gorm:"not null" json:"entrepreneur_id"`
 	ShopOpenDates    []ShopOpenDate `gorm:"foreignKey:ShopID" json:"shop_open_dates"`
 	ShopMenus        []ShopMenu     `gorm:"foreignKey:ShopID" json:"shop_menus"`
 	SocialMedia      []SocialMedia  `gorm:"foreignKey:ShopID" json:"social_media"`
@@ -68,20 +68,20 @@ type Shop struct {
 // ShopCategory represents the ShopCategory table
 type ShopCategory struct {
 	gorm.Model
-	ID   uint   `gorm:"primaryKey" json:"id"`
-	Name string `json:"name"`
+	ID    uint   `gorm:"primaryKey" json:"id"`
+	Name  string `json:"name"`
 	Shops []Shop `gorm:"foreignKey:ShopCategoryID" json:"shops"`
 }
 
 // ShopOpenDate represents the ShopOpenDate table
 type ShopOpenDate struct {
-	ID              uint            `gorm:"primaryKey" json:"id"`
-	StartTime       time.Time       `json:"start_time"`
-	EndTime         time.Time       `json:"end_time"`
-	ShopID          uint            `gorm:"not null" json:"shop_id"`
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	StartTime        time.Time      `json:"start_time"`
+	EndTime          time.Time      `json:"end_time"`
+	ShopID           uint           `gorm:"not null" json:"shop_id"`
 	MarketOpenDateID uint           `gorm:"not null" json:"market_open_date_id"`
-	Shop            Shop            `gorm:"foreignKey:ShopID" json:"shop"`
-	MarketOpenDate  MarketOpenDate `gorm:"foreignKey:MarketOpenDateID" json:"market_open_date"`
+	Shop             Shop           `gorm:"foreignKey:ShopID" json:"shop"`
+	MarketOpenDate   MarketOpenDate `gorm:"foreignKey:MarketOpenDateID" json:"market_open_date"`
 }
 
 // MarketOpenDate represents the MarketOpenDate table
@@ -148,8 +148,8 @@ type Workshop struct {
 
 // ContactToAdmin represents the ContactToAdmin table
 type ContactToAdmin struct {
-	ID          uint   `gorm:"primaryKey" json:"id"`
-	Problem     string `json:"problem"`
+	ID           uint   `gorm:"primaryKey" json:"id"`
+	Problem      string `json:"problem"`
 	FromUsername string `json:"from_username"`
-	Detail      string `json:"detail"`
+	Detail       string `json:"detail"`
 }
