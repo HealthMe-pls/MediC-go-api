@@ -21,7 +21,45 @@ func main() {
 	db := SetupDatabase()
 
 	// for development only
-	db.AutoMigrate(&Patient{}, &Image{})
+	// db.AutoMigrate(&Patient{}, &Image{})
+	// db.AutoMigrate(
+	// 	&Patient{},
+	// 	&Image{},
+	// 	&Admin{},
+	// 	&ContactToAdmin{},
+	// 	&ShopCategory{},
+	// 	&MarketOpenDate{},
+	// 	&Entrepreneur{},
+	// 	&Shop{},
+	// 	&ShopOpenDate{},
+	// 	&MarketMap{},
+	// 	&SocialMedia{},
+	// 	&ShopMenu{},
+	// 	&Workshop{},
+	// 	&Photo{},
+	// )
+
+	// AutoMigrate tables first
+	if err := db.AutoMigrate(
+		&Patient{},
+		&Image{},
+		&Admin{},
+		&ContactToAdmin{},
+		&ShopCategory{},
+		&MarketOpenDate{},
+		&Entrepreneur{},
+		&Shop{},
+		&ShopOpenDate{},
+		&MarketMap{},
+		&SocialMedia{},
+		&ShopMenu{},
+		&Workshop{},
+		&Photo{},
+	); err != nil {
+		log.Fatalf("Failed to migrate: %v", err)
+	}
+	
+
 
 	
 	// use godotenv to get .env variables
@@ -122,7 +160,7 @@ func SetupDatabase() *gorm.DB {
 	fmt.Print(dsn)
 	if dsn == "" {
 		// Default for development
-		dsn = "user:12345678@tcp(127.0.0.1:3306)/medic-test?charset=utf8mb4&parseTime=True&loc=Local"
+		dsn = "user:12345678@tcp(127.0.0.1:3306)/medic?charset=utf8mb4&parseTime=True&loc=Local"
 	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: newLogger,})
