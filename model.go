@@ -37,28 +37,28 @@ type Admin struct {
 // Entrepreneur represents the Entrepreneur table
 type Entrepreneur struct {
 	gorm.Model
-	Username   string `gorm:"primaryKey"`
-	Password   string
+	Username    string `gorm:"primaryKey"`
+	Password    string
 	PhoneNumber string
-	Title      string
-	FirstName  string
-	MiddleName string
-	LastName   string
-	Shops      []Shop `gorm:"foreignKey:EntUsername"`
+	Title       string
+	FirstName   string
+	MiddleName  string
+	LastName    string
+	Shop        *Shop `gorm:"foreignKey:EntUsername"` // Use pointer to prevent recursive type
 }
 
 // Shop represents the Shop table
 type Shop struct {
 	gorm.Model
-	ID              uint           `gorm:"primaryKey"`
+	ID              uint         `gorm:"primaryKey"`
 	Name            string
-	ShopCategoryID  uint           `gorm:"not null"`
-	ShopCategory    ShopCategory   `gorm:"foreignKey:ShopCategoryID"`
+	ShopCategoryID  uint         `gorm:"not null"`
+	ShopCategory    ShopCategory `gorm:"foreignKey:ShopCategoryID"`
 	Status          bool
 	FullDescription string
 	BriefDescription string
-	EntUsername     string         `gorm:"not null"`
-	Entrepreneur    Entrepreneur   `gorm:"foreignKey:EntUsername"`
+	EntUsername     string       `gorm:"unique;not null"` // Unique Foreign Key for One-to-One
+	Entrepreneur    *Entrepreneur `gorm:"references:Username"` // Use pointer to break recursive reference
 	ShopOpenDates   []ShopOpenDate `gorm:"foreignKey:ShopID"`
 	ShopMenus       []ShopMenu     `gorm:"foreignKey:ShopID"`
 	SocialMedia     []SocialMedia  `gorm:"foreignKey:ShopID"`
@@ -114,14 +114,15 @@ type SocialMedia struct {
 // ShopMenu represents the ShopMenu table
 type ShopMenu struct {
 	gorm.Model
-	ID               uint    `gorm:"primaryKey"`
+	ID                uint    `gorm:"primaryKey"`
 	ProductDescription string
-	Price            float64
-	ProductName      string
-	ShopID           uint    `gorm:"not null"`
-	Shop             Shop    `gorm:"foreignKey:ShopID"`
-	Photos           []Photo `gorm:"foreignKey:ProductID"`
+	Price             float64
+	ProductName       string
+	ShopID            uint    `gorm:"not null"`
+	Shop              Shop    `gorm:"foreignKey:ShopID"`
+	Photo             Photo   `gorm:"foreignKey:MenuID"` // One-to-One relationship with Photo
 }
+
 
 // Photo represents the Photo table
 type Photo struct {
@@ -129,7 +130,7 @@ type Photo struct {
 	ID           uint   `gorm:"primaryKey"`
 	PhotoCategory string
 	PathFile      string
-	ProductID     *uint
+	ProductID     *uint `gorm:"unique;not null"` // Unique Foreign Key for One-to-One
 	WorkshopName  *string
 	ShopID        *uint
 }
