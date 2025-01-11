@@ -20,7 +20,7 @@ type Image struct {
 	ID        *int    `json:"ID"`
 	PatientID *int    `json:"PatientID"`
 	ImagePath *string `json:"ImagePath"`
-	Patient   Patient `gorm:"foreignKey:PatientID"` // Establish relationship with Patient
+	Patient   Patient `gorm:"foreignKey:PatientID"`
 }
 
 // Admin represents the Admin table
@@ -37,35 +37,32 @@ type Admin struct {
 // Entrepreneur represents the Entrepreneur table
 type Entrepreneur struct {
 	gorm.Model
-	Username    string `gorm:"primaryKey"` // ใช้ unique เพื่อสร้างดัชนี
+	Username    string `gorm:"unique"` // ทำให้ Username เป็น unique แต่ไม่ต้องเป็น primary key
 	Password    string
 	PhoneNumber string
 	Title       string
 	FirstName   string
 	MiddleName  string
 	LastName    string
-	Shop        *Shop `gorm:"foreignKey:EntUsername"`
+	Shops       []Shop `gorm:"foreignKey:EntrepreneurID"` // เชื่อมโยงกับ Shop ผ่าน EntrepreneurID
 }
-
-
-
 
 // Shop represents the Shop table
 type Shop struct {
 	gorm.Model
-	ID              uint         `gorm:"primaryKey"`
-	Name            string
-	ShopCategoryID  uint         `gorm:"not null"`
-	ShopCategory    ShopCategory `gorm:"foreignKey:ShopCategoryID"`
-	Status          bool
-	FullDescription string
+	ID               uint         `gorm:"primaryKey"`
+	Name             string
+	ShopCategoryID   uint         `gorm:"not null"`
+	ShopCategory     ShopCategory `gorm:"foreignKey:ShopCategoryID"`
+	Status           bool
+	FullDescription  string
 	BriefDescription string
-	EntUsername     string       `gorm:"unique;not null"` // ใช้เป็น Foreign Key
-	Entrepreneur    *Entrepreneur `gorm:"foreignKey:EntUsername;references:Username"`
-	ShopOpenDates   []ShopOpenDate `gorm:"foreignKey:ShopID"`
-	ShopMenus       []ShopMenu     `gorm:"foreignKey:ShopID"`
-	SocialMedia     []SocialMedia  `gorm:"foreignKey:ShopID"`
-	Photos          []Photo        `gorm:"foreignKey:ShopID"`
+	EntrepreneurID   uint         `gorm:"not null"` // ใช้เป็น Foreign Key ที่อ้างอิงไปที่ Entrepreneur ID
+	// Entrepreneur     Entrepreneur `gorm:"foreignKey:EntrepreneurID;references:id"` // ใช้ EntrepreneurID เชื่อมกับ Entrepreneur ID
+	ShopOpenDates    []ShopOpenDate `gorm:"foreignKey:ShopID"`
+	ShopMenus        []ShopMenu     `gorm:"foreignKey:ShopID"`
+	SocialMedia      []SocialMedia  `gorm:"foreignKey:ShopID"`
+	Photos           []Photo        `gorm:"foreignKey:ShopID"`
 }
 
 // ShopCategory represents the Shop_Category table
@@ -126,7 +123,6 @@ type ShopMenu struct {
 	Photo              Photo   `gorm:"foreignKey:MenuID"` // ชี้ไปยังฟิลด์ MenuID ของ Photo
 }
 
-
 // Photo represents the Photo table
 type Photo struct {
 	gorm.Model
@@ -148,7 +144,7 @@ type Workshop struct {
 	Instructor  string
 	StartTime   time.Time
 	EndTime     time.Time
-	Date 		time.Time `gorm:"type:date"`
+	Date        time.Time `gorm:"type:date"`
 	Photos      []Photo `gorm:"foreignKey:WorkshopName"`
 }
 
@@ -160,4 +156,3 @@ type ContactToAdmin struct {
 	FromUsername string
 	Detail      string
 }
-

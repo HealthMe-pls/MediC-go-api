@@ -39,6 +39,7 @@ func main() {
 	// 	&Photo{},
 	// )
 
+	// AutoMigrate tables first
 	if err := db.AutoMigrate(
 		&Patient{},
 		&Image{},
@@ -53,10 +54,12 @@ func main() {
 		&SocialMedia{},
 		&ShopMenu{},
 		&Workshop{},
-		&Photo{}); err != nil {
+		&Photo{},
+	); err != nil {
 		log.Fatalf("Failed to migrate: %v", err)
 	}
 	
+
 
 	
 	// use godotenv to get .env variables
