@@ -74,20 +74,22 @@ type ShopCategory struct {
 
 // ShopOpenDate represents the ShopOpenDate table
 type ShopOpenDate struct {
-	ID        uint      `gorm:"primaryKey"`
-	StartTime time.Time
-	EndTime   time.Time
-	ShopID    uint      `gorm:"not null"`
-	DateID    uint      `gorm:"not null"`
-	Shop      Shop      `gorm:"foreignKey:ShopID"`
+	ID             uint            `gorm:"primaryKey"`
+	StartTime      time.Time
+	EndTime        time.Time
+	ShopID         uint            `gorm:"not null"`
+	MarketOpenDateID uint          `gorm:"not null"` // เชื่อมโยงกับ MarketOpenDateID
+	Shop           Shop            `gorm:"foreignKey:ShopID"`
+	MarketOpenDate MarketOpenDate `gorm:"foreignKey:MarketOpenDateID"` // เชื่อมโยงกับ MarketOpenDate
 }
 
 // MarketOpenDate represents the MarketOpenDate table
 type MarketOpenDate struct {
-	ID        uint      `gorm:"primaryKey"`
-	Date      time.Time `gorm:"type:date"`
-	StartTime time.Time
-	EndTime   time.Time
+	ID            uint           `gorm:"primaryKey"`
+	Date          time.Time      `gorm:"type:date"`
+	StartTime     time.Time
+	EndTime       time.Time
+	ShopOpenDates []ShopOpenDate `gorm:"foreignKey:MarketOpenDateID"` // เชื่อมโยงกลับกับ ShopOpenDate
 }
 
 // MarketMap represents the MarketMap table
