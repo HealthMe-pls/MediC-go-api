@@ -37,15 +37,18 @@ type Admin struct {
 // Entrepreneur represents the Entrepreneur table
 type Entrepreneur struct {
 	gorm.Model
-	Username    string `gorm:"primaryKey"`
+	Username    string `gorm:"primaryKey"` // ใช้ unique เพื่อสร้างดัชนี
 	Password    string
 	PhoneNumber string
 	Title       string
 	FirstName   string
 	MiddleName  string
 	LastName    string
-	Shop        *Shop `gorm:"foreignKey:EntUsername"` // Use pointer to prevent recursive type
+	Shop        *Shop `gorm:"foreignKey:EntUsername"`
 }
+
+
+
 
 // Shop represents the Shop table
 type Shop struct {
@@ -57,8 +60,8 @@ type Shop struct {
 	Status          bool
 	FullDescription string
 	BriefDescription string
-	EntUsername     string       `gorm:"unique;not null"` // Unique Foreign Key for One-to-One
-	Entrepreneur    *Entrepreneur `gorm:"references:Username"` // Use pointer to break recursive reference
+	EntUsername     string       `gorm:"unique;not null"` // ใช้เป็น Foreign Key
+	Entrepreneur    *Entrepreneur `gorm:"foreignKey:EntUsername;references:Username"`
 	ShopOpenDates   []ShopOpenDate `gorm:"foreignKey:ShopID"`
 	ShopMenus       []ShopMenu     `gorm:"foreignKey:ShopID"`
 	SocialMedia     []SocialMedia  `gorm:"foreignKey:ShopID"`
@@ -114,13 +117,13 @@ type SocialMedia struct {
 // ShopMenu represents the ShopMenu table
 type ShopMenu struct {
 	gorm.Model
-	ID                uint    `gorm:"primaryKey"`
+	ID                 uint    `gorm:"primaryKey"`
 	ProductDescription string
-	Price             float64
-	ProductName       string
-	ShopID            uint    `gorm:"not null"`
-	Shop              Shop    `gorm:"foreignKey:ShopID"`
-	Photo             Photo   `gorm:"foreignKey:MenuID"` // One-to-One relationship with Photo
+	Price              float64
+	ProductName        string
+	ShopID             uint    `gorm:"not null"`
+	Shop               Shop    `gorm:"foreignKey:ShopID"`
+	Photo              Photo   `gorm:"foreignKey:MenuID"` // ชี้ไปยังฟิลด์ MenuID ของ Photo
 }
 
 
@@ -130,7 +133,7 @@ type Photo struct {
 	ID           uint   `gorm:"primaryKey"`
 	PhotoCategory string
 	PathFile      string
-	ProductID     *uint `gorm:"unique;not null"` // Unique Foreign Key for One-to-One
+	MenuID        *uint // เพิ่มฟิลด์นี้สำหรับการเชื่อมโยงกับ ShopMenu
 	WorkshopName  *string
 	ShopID        *uint
 }

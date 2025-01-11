@@ -22,20 +22,41 @@ func main() {
 
 	// for development only
 	// db.AutoMigrate(&Patient{}, &Image{})
-	 db.AutoMigrate(&Admin{},
-		&Patient{}, 
+	// db.AutoMigrate(
+	// 	&Patient{},
+	// 	&Image{},
+	// 	&Admin{},
+	// 	&ContactToAdmin{},
+	// 	&ShopCategory{},
+	// 	&MarketOpenDate{},
+	// 	&Entrepreneur{},
+	// 	&Shop{},
+	// 	&ShopOpenDate{},
+	// 	&MarketMap{},
+	// 	&SocialMedia{},
+	// 	&ShopMenu{},
+	// 	&Workshop{},
+	// 	&Photo{},
+	// )
+
+	if err := db.AutoMigrate(
+		&Patient{},
 		&Image{},
+		&Admin{},
+		&ContactToAdmin{},
+		&ShopCategory{},
+		&MarketOpenDate{},
 		&Entrepreneur{},
 		&Shop{},
-		&ShopCategory{},
 		&ShopOpenDate{},
-		&MarketOpenDate{},
 		&MarketMap{},
 		&SocialMedia{},
 		&ShopMenu{},
-		&Photo{},
 		&Workshop{},
-		&ContactToAdmin{},)
+		&Photo{}); err != nil {
+		log.Fatalf("Failed to migrate: %v", err)
+	}
+	
 
 	
 	// use godotenv to get .env variables
