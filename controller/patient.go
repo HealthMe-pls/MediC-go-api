@@ -92,7 +92,9 @@ func UploadImage(db *gorm.DB) fiber.Handler {
 
 		return c.SendString(file.Filename)
 	}
+
 }
+func ptrString(s string) *string { return &s }
 
 func GetPatientImages(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
