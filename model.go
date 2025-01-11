@@ -25,12 +25,12 @@ type Image struct {
 
 // Admin represents the Admin table
 type Admin struct {
-	Username   string `gorm:"primaryKey"`
-	Password   string
-	Title      string
-	FirstName  string
-	MiddleName string
-	LastName   string
+	Username   string `gorm:"primaryKey" json:"username"`
+	Password   string `json:"password"`
+	Title      string `json:"title"`
+	FirstName  string `json:"first_name"`
+	MiddleName string `json:"middle_name"`
+	LastName   string `json:"last_name"`
 }
 
 // Entrepreneur represents the Entrepreneur table

@@ -21,25 +21,6 @@ func main() {
 	db := SetupDatabase()
 
 	// for development only
-	// db.AutoMigrate(&Patient{}, &Image{})
-	// db.AutoMigrate(
-	// 	&Patient{},
-	// 	&Image{},
-	// 	&Admin{},
-	// 	&ContactToAdmin{},
-	// 	&ShopCategory{},
-	// 	&MarketOpenDate{},
-	// 	&Entrepreneur{},
-	// 	&Shop{},
-	// 	&ShopOpenDate{},
-	// 	&MarketMap{},
-	// 	&SocialMedia{},
-	// 	&ShopMenu{},
-	// 	&Workshop{},
-	// 	&Photo{},
-	// )
-
-	// AutoMigrate tables first
 	if err := db.AutoMigrate(
 		&Patient{},
 		&Image{},
