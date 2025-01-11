@@ -25,7 +25,6 @@ type Image struct {
 
 // Admin represents the Admin table
 type Admin struct {
-	gorm.Model
 	Username   string `gorm:"primaryKey"`
 	Password   string
 	Title      string
@@ -75,7 +74,6 @@ type ShopCategory struct {
 
 // ShopOpenDate represents the ShopOpenDate table
 type ShopOpenDate struct {
-	gorm.Model
 	ID        uint      `gorm:"primaryKey"`
 	StartTime time.Time
 	EndTime   time.Time
@@ -86,7 +84,6 @@ type ShopOpenDate struct {
 
 // MarketOpenDate represents the MarketOpenDate table
 type MarketOpenDate struct {
-	gorm.Model
 	ID        uint      `gorm:"primaryKey"`
 	Date      time.Time `gorm:"type:date"`
 	StartTime time.Time
@@ -95,11 +92,11 @@ type MarketOpenDate struct {
 
 // MarketMap represents the MarketMap table
 type MarketMap struct {
-	gorm.Model
-	BlockID uint `gorm:"primaryKey"`
+	BlockID uint `gorm:"primaryKey"` // ใช้ BlockID เป็น Primary Key
 	ShopID  uint `gorm:"not null"`
 	Shop    Shop `gorm:"foreignKey:ShopID"`
 }
+
 
 // SocialMedia represents the SocialMedia table
 type SocialMedia struct {
@@ -125,18 +122,18 @@ type ShopMenu struct {
 
 // Photo represents the Photo table
 type Photo struct {
-	gorm.Model
-	ID           uint   `gorm:"primaryKey"`
-	PhotoCategory string
-	PathFile      string
-	MenuID        *uint // เพิ่มฟิลด์นี้สำหรับการเชื่อมโยงกับ ShopMenu
-	WorkshopName  *string
-	ShopID        *uint
+    gorm.Model
+    ID            uint   `gorm:"primaryKey"`
+    PhotoCategory string
+    PathFile      string
+    MenuID        *uint
+    WorkshopName  string `gorm:"size:255"` // ใช้ VARCHAR แทน LONGTEXT
+    ShopID        *uint
 }
+
 
 // Workshop represents the Workshop table
 type Workshop struct {
-	gorm.Model
 	Name        string    `gorm:"primaryKey"`
 	Description string
 	Price       float64
@@ -150,7 +147,6 @@ type Workshop struct {
 
 // ContactToAdmin represents the ContactToAdmin table
 type ContactToAdmin struct {
-	gorm.Model
 	ID          uint   `gorm:"primaryKey"`
 	Problem     string
 	FromUsername string
