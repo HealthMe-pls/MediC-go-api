@@ -47,26 +47,26 @@ type Entrepreneur struct {
 
 // Shop represents the Shop table
 type Shop struct {
-	ID                   uint           `gorm:"primaryKey" json:"id"`
-	Name                 string         `json:"name"`
-	ShopCategoryID       uint           `gorm:"not null" json:"shop_category_id"`
-	ShopCategory         ShopCategory   `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop_category"`
-	Status               bool           `json:"status"`
-	FullDescription      string         `json:"full_description"`
-	BriefDescription     string         `json:"brief_description"`
-	EntrepreneurID       uint           `gorm:"not null" json:"entrepreneur_id"`
-	Entrepreneur         Entrepreneur   `gorm:"foreignKey:EntrepreneurID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"entrepreneur"`
-	ShopOpenDates        []ShopOpenDate `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_open_dates"`
-	ShopMenus            []ShopMenu     `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_menus"`
-	SocialMedia          []SocialMedia  `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"social_media"`
-	Photos               []Photo        `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	Name             string         `json:"name"`
+	ShopCategoryID   uint           `json:"shop_category_id"`
+	ShopCategory     ShopCategory   `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop_category"`
+	Status           bool           `json:"status"`
+	FullDescription  string         `json:"full_description"`
+	BriefDescription string         `json:"brief_description"`
+	EntrepreneurID   uint           `gorm:"not null" json:"entrepreneur_id"`
+	Entrepreneur     Entrepreneur   `gorm:"foreignKey:EntrepreneurID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"entrepreneur"`
+	ShopOpenDates    []ShopOpenDate `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_open_dates"`
+	ShopMenus        []ShopMenu     `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_menus"`
+	SocialMedia      []SocialMedia  `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"social_media"`
+	Photos           []Photo        `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
 }
 
 // ShopCategory represents the ShopCategory table
 type ShopCategory struct {
 	ID    uint   `gorm:"primaryKey" json:"id"`
 	Name  string `json:"name"`
-	Shops []Shop `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shops"`
+	Shops []Shop `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shops"`
 }
 
 // ShopOpenDate represents the ShopOpenDate table
@@ -92,11 +92,9 @@ type MarketOpenDate struct {
 // MarketMap represents the MarketMap table
 type MarketMap struct {
 	BlockID uint  `gorm:"primaryKey" json:"block_id"`
-	ShopID  *uint `json:"shop_id"` 
+	ShopID  *uint `json:"shop_id"`
 	Shop    Shop  `gorm:"foreignKey:ShopID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop"`
 }
-
-
 
 // SocialMedia represents the SocialMedia table
 type SocialMedia struct {
