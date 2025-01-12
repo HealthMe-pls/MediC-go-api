@@ -2,6 +2,7 @@ package controller
 
 import (
 	"strconv"
+
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -14,13 +15,65 @@ func Shop(db *gorm.DB,c *fiber.Ctx) error {
 func GetShopByID(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
 	var shop model.Shop
-	if err := db.First(&shop, id).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Shop not found",
-		})
-	}
+	// if err := db.First(&shop, id).Error; err != nil {
+	// 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+	// 		"error": "Shop not found",
+	// 		"details": err.Error(),
+	// 	})
+	// }
+	db.First(&shop, id)
 	return c.JSON(shop)
 }
+func GetShops(db *gorm.DB, c *fiber.Ctx) error {
+	var shops []model.Shop
+	if err := db.Find(&shops).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve shop categories",
+			"details": err.Error(),
+		})
+	}
+	return c.JSON(shops)
+}
+// func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
+// 	shopID := c.Params("id")
+
+// 	// Struct to hold the shop details along with related entities
+// 	var shop model.Shop
+// 	if err := db.Preload("ShopCategory").
+// 		Preload("Entrepreneur").
+// 		Preload("ShopOpenDates").
+// 		Preload("ShopMenus.Photo").
+// 		Preload("SocialMedia").
+// 		Preload("Photos").
+// 		First(&shop, shopID).Error; err != nil {
+// 		if err == gorm.ErrRecordNotFound {
+// 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+// 				"error": "Shop not found",
+// 			})
+// 		}
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"error": "Failed to retrieve shop details",
+// 		})
+// 	}
+
+// 	// Preparing the response
+// 	response := fiber.Map{
+// 		"id":               shop.ID,
+// 		"name":             shop.Name,
+// 		"shop_category":    shop.ShopCategory,
+// 		"status":           shop.Status,
+// 		"full_description": shop.FullDescription,
+// 		"brief_description": shop.BriefDescription,
+// 		"entrepreneur":     shop.Entrepreneur,
+// 		"shop_open_dates":  shop.ShopOpenDates,
+// 		"shop_menus":       shop.ShopMenus,
+// 		"social_media":     shop.SocialMedia,
+// 		"photos":           shop.Photos,
+// 	}
+
+// 	return c.Status(fiber.StatusOK).JSON(response)
+// }
+
 
 func CreateShop(db *gorm.DB, c *fiber.Ctx) error {
 	// Parse the request body into the Shop struct
@@ -28,6 +81,7 @@ func CreateShop(db *gorm.DB, c *fiber.Ctx) error {
 	if err := c.BodyParser(shop); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Failed to parse request body",
+			"details": err.Error(),
 		})
 	}
 
@@ -36,6 +90,7 @@ func CreateShop(db *gorm.DB, c *fiber.Ctx) error {
 	if err := db.First(&shopCategory, shop.ShopCategoryID).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "ShopCategory not found",
+			"details": err.Error(),
 		})
 	}
 
@@ -56,7 +111,11 @@ func UpdateShop(db *gorm.DB, c *fiber.Ctx) error {
 
     // Find the shop by ID
     if err := db.First(&shop, id).Error; err != nil {
-        return c.Status(fiber.StatusNotFound).SendString("Shop not found")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Shop not found",
+			"details": err.Error(),
+		})
+        // return c.Status(fiber.StatusNotFound).SendString("Shop not found")
     }
 
     // Parse the updated details from the request body
@@ -122,11 +181,12 @@ func CreateSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
 func GetSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
 	var socialMedia model.SocialMedia
-	if err := db.First(&socialMedia, id).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Social media not found",
-		})
-	}
+	// if err := db.First(&socialMedia, id).Error; err != nil {
+	// 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+	// 		"error": "Social media not found",
+	// 	})
+	// }
+	db.First(&socialMedia, id)
 	return c.JSON(socialMedia)
 }
 
@@ -198,11 +258,12 @@ func CreateShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 func GetShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
 	var shopMenu model.ShopMenu
-	if err := db.First(&shopMenu, id).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Shop menu not found",
-		})
-	}
+	// if err := db.First(&shopMenu, id).Error; err != nil {
+	// 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+	// 		"error": "Shop menu not found",
+	// 	})
+	// }
+	db.First(&shopMenu, id)
 	return c.JSON(shopMenu)
 }
 
@@ -217,6 +278,7 @@ func GetShopMenuByShopID(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.JSON(shopMenus)
 }
+
 
 // UpdateShopMenu updates a ShopMenu entry by ID
 func UpdateShopMenu(db *gorm.DB, c *fiber.Ctx) error {
@@ -288,11 +350,12 @@ func GetShopCategories(db *gorm.DB, c *fiber.Ctx) error {
 func GetShopCategoryByID(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
 	var category model.ShopCategory
-	if err := db.First(&category, id).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Shop category not found",
-		})
-	}
+	// if err := db.First(&category, id).Error; err != nil {
+	// 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+	// 		"error": "Shop category not found",
+	// 	})
+	// }
+	db.First(&category, id)
 	return c.JSON(category)
 }
 
