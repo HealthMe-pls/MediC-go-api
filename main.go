@@ -86,38 +86,38 @@ func main() {
 	//admin --check
 	app.Get("/admin",func(c *fiber.Ctx) error {return controller.GetAdmins(db,c)	})
 	app.Get("/admin/:username",func(c *fiber.Ctx) error {return controller.GetAdminByUsername(db,c)	})
-	app.Post("/admin/create", func(c *fiber.Ctx) error {return controller.CreateAdmin(db, c)})
-	app.Put("/admin/update/:username", func(c *fiber.Ctx) error {return controller.UpdateAdmin(db, c)})
-	app.Delete("/admin/delete/:username" ,func (c *fiber.Ctx) error  {return controller.DeleteAdmin(db, c)})
+	app.Post("/admin", func(c *fiber.Ctx) error {return controller.CreateAdmin(db, c)})
+	app.Put("/admin/:username", func(c *fiber.Ctx) error {return controller.UpdateAdmin(db, c)})
+	app.Delete("/admin/:username" ,func (c *fiber.Ctx) error  {return controller.DeleteAdmin(db, c)})
 
 	//entrepreneur
 	app.Get("/entrepreneur",func(c *fiber.Ctx) error {return controller.GetEntrepreneur(db,c)	})
 	app.Get("/entrepreneur/:username",func(c *fiber.Ctx) error {return controller.GetEntrepreneurByUsername(db,c)	})
-	app.Post("/entrepreneur/create", func(c *fiber.Ctx) error {return controller.CreateEntrepreneur(db, c)})
-	app.Put("/entrepreneur/update/:username", func(c *fiber.Ctx) error {return controller.UpdateEntrepreneur(db, c)})
+	app.Post("/entrepreneur", func(c *fiber.Ctx) error {return controller.CreateEntrepreneur(db, c)})
+	app.Put("/entrepreneur/:username", func(c *fiber.Ctx) error {return controller.UpdateEntrepreneur(db, c)})
 	//Not available
-	app.Delete("/entrepreneur/delete/:username", func(c *fiber.Ctx) error {return controller.DeleteEntrepreneurAndShops(db, c)})
+	app.Delete("/entrepreneur/:username", func(c *fiber.Ctx) error {return controller.DeleteEntrepreneurAndShops(db, c)})
 
 	//map --check
 	app.Get("/map",func(c *fiber.Ctx) error {return controller.GetMarketMap(db, c)})
 	app.Get("/map/:id", func(c *fiber.Ctx) error {return controller.GetMapByBlockID(db, c)})
 	app.Get("/shopInmap/:id",func(c *fiber.Ctx) error {return controller.GetShopInMapID(db, c)})
-	app.Post("/map/create", func(c *fiber.Ctx) error {return controller.CreateMarketMap(db, c)})
-	app.Delete("/map/delete/:block_id", func(c *fiber.Ctx) error {return controller.DeleteMarketMapsByBlockID(db, c)})
-	app.Put("/map/update/:block_id", func(c *fiber.Ctx) error {return controller.UpdateMarketMapByBlockID(db, c)})
+	app.Post("/map", func(c *fiber.Ctx) error {return controller.CreateMarketMap(db, c)})
+	app.Delete("/map/:block_id", func(c *fiber.Ctx) error {return controller.DeleteMarketMapsByBlockID(db, c)})
+	app.Put("/map/:block_id", func(c *fiber.Ctx) error {return controller.UpdateMarketMapByBlockID(db, c)})
 
 	//shop category
-	app.Post("/shopcategory/create", func(c *fiber.Ctx) error {return controller.CreateShopCategory(db, c)})
+	app.Post("/shopcategory", func(c *fiber.Ctx) error {return controller.CreateShopCategory(db, c)})
 	app.Get("/shopcategory", func(c *fiber.Ctx) error {return controller.GetShopCategories(db, c)})
 	app.Get("/shopcategory/:id", func(c *fiber.Ctx) error {return controller.GetShopCategoryByID(db, c)})
-	app.Delete("/shopcategory/delete/:id", func(c *fiber.Ctx) error {return controller.DeleteShopCategory(db, c)})
-	app.Put("/shop-category/update/:id", func(c *fiber.Ctx) error {return controller.UpdateShopCategory(db, c)})
+	app.Delete("/shopcategory/:id", func(c *fiber.Ctx) error {return controller.DeleteShopCategory(db, c)})
+	app.Put("/shop-category/:id", func(c *fiber.Ctx) error {return controller.UpdateShopCategory(db, c)})
 
 	//shop
-	app.Post("/shop/create", func(c *fiber.Ctx) error {	return controller.CreateShop(db, c)})
+	app.Post("/sho", func(c *fiber.Ctx) error {	return controller.CreateShop(db, c)})
 	app.Get("/shop/:id", func(c *fiber.Ctx) error {return controller.GetShopByID(db, c)})
-	app.Put("/shop/update/:id", func(c *fiber.Ctx) error {return controller.UpdateShop(db, c)})
-	app.Delete("/shop/delete/:id", func(c *fiber.Ctx) error {return controller.DeleteShop(db, c)})
+	app.Put("/shop/:id", func(c *fiber.Ctx) error {return controller.UpdateShop(db, c)})
+	app.Delete("/shop/:id", func(c *fiber.Ctx) error {return controller.DeleteShop(db, c)})
 	app.Get("/shops/category/:shop_category_id", func(c *fiber.Ctx) error {return controller.GetShopsByCategory(db, c)})
 	
 	// Workshop Routes
