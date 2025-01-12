@@ -19,14 +19,14 @@ func GetWorkshops(db *gorm.DB, c *fiber.Ctx) error {
 
 // GetWorkshopByID retrieves a workshop by its ID
 func GetWorkshopByID(db *gorm.DB, c *fiber.Ctx) error {
-	name := c.Params("name")
+	id := c.Params("id")
 	var workshop model.Workshop
-	if err := db.First(&workshop, "name = ?", name).Error; err != nil {
+	if err := db.First(&workshop, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Workshop not found",
 		})
 	}
-	// db.First(&workshop, "Name = ?", name)
+	// db.First(&workshop, "id = ?", id)
 	return c.JSON(workshop)
 }
 
@@ -50,9 +50,9 @@ func CreateWorkshop(db *gorm.DB, c *fiber.Ctx) error {
 
 // UpdateWorkshop updates an existing workshop
 func UpdateWorkshop(db *gorm.DB, c *fiber.Ctx) error {
-	name := c.Params("name")
+	id := c.Params("id")
 	var workshop model.Workshop
-	if err := db.First(&workshop, "name = ?", name).Error; err != nil {
+	if err := db.First(&workshop, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Workshop not found",
 		})
@@ -72,8 +72,8 @@ func UpdateWorkshop(db *gorm.DB, c *fiber.Ctx) error {
 
 // DeleteWorkshop deletes a workshop by its ID
 func DeleteWorkshop(db *gorm.DB, c *fiber.Ctx) error {
-	name := c.Params("name")
-	if err := db.Delete(&model.Workshop{}, "name = ?", name).Error; err != nil {
+	id := c.Params("id")
+	if err := db.Delete(&model.Workshop{}, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete workshop",
 		})

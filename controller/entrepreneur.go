@@ -12,12 +12,12 @@ func GetEntrepreneur(db *gorm.DB,c *fiber.Ctx) error {
 	return c.JSON(entrepreneur)
 }
 
-func GetEntrepreneurByUsername(db *gorm.DB, c *fiber.Ctx) error {
-    username := c.Params("username")
+func GetEntrepreneurByID(db *gorm.DB, c *fiber.Ctx) error {
+    id := c.Params("id")
     var entrepreneur model.Entrepreneur
     
-    // Query the database for the entrepreneur with the provided username
-    if err := db.First(&entrepreneur, "username = ?", username).Error; err != nil {
+    // Query the database for the entrepreneur with the provided id
+    if err := db.First(&entrepreneur, "id = ?", id).Error; err != nil {
         // If an error occurs (e.g., no entrepreneur found), return a 404
         return c.Status(fiber.StatusNotFound).SendString("Entrepreneur not found")
     }
@@ -25,12 +25,47 @@ func GetEntrepreneurByUsername(db *gorm.DB, c *fiber.Ctx) error {
     // If successful, return the entrepreneur data as a JSON response
     return c.JSON(entrepreneur)
 }
+// func CreateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
+// 	// Parse the request body into the Entrepreneur struct
+// 	entrepreneur := new(model.Entrepreneur)
+// 	if err := c.BodyParser(entrepreneur); err != nil {
+// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+// 			"error": "Failed to parse request body",
+// 		})
+// 	}
+    
+
+// 	// Save the Entrepreneur to the database
+// 	if result := db.Create(&entrepreneur); result.Error != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"error": "Failed to create entrepreneur",
+// 		})
+// 	}
+
+// 	// Return the created Entrepreneur as a JSON response
+// 	return c.Status(fiber.StatusCreated).JSON(entrepreneur)
+// }
 func CreateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
 	// Parse the request body into the Entrepreneur struct
 	entrepreneur := new(model.Entrepreneur)
 	if err := c.BodyParser(entrepreneur); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Failed to parse request body",
+		})
+	}
+
+	// Check if the username already exists
+    var existingEntrepreneur model.Entrepreneur
+	err := db.Where("username = ?", entrepreneur.Username).First(&existingEntrepreneur).Error
+	if err == nil {
+		// Username already exists
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"error": "Username already exists",
+		})
+	} else if err != nil && err != gorm.ErrRecordNotFound {
+		// Database error occurred while checking
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to check username",
 		})
 	}
 
@@ -45,13 +80,14 @@ func CreateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(entrepreneur)
 }
 
+
 func UpdateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
-    // Get the username parameter from the URL
-    username := c.Params("username")
+    // Get the id parameter from the URL
+    id := c.Params("id")
     var entrepreneur model.Entrepreneur
 
-    // Find the entrepreneur by username
-    if err := db.First(&entrepreneur, "username = ?", username).Error; err != nil {
+    // Find the entrepreneur by id
+    if err := db.First(&entrepreneur, "id = ?", id).Error; err != nil {
         return c.Status(fiber.StatusNotFound).SendString("Entrepreneur not found")
     }
 
@@ -70,11 +106,11 @@ func UpdateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 // func DeleteEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
-//     // Get the username parameter from the URL
-//     username := c.Params("username")
+//     // Get the id parameter from the URL
+//     id := c.Params("id")
 
-//     // Delete the entrepreneur from the database by their username
-//     if result := db.Delete(&model.Entrepreneur{}, "username = ?", username); result.Error != nil {
+//     // Delete the entrepreneur from the database by their id
+//     if result := db.Delete(&model.Entrepreneur{}, "id = ?", id); result.Error != nil {
 //         return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete entrepreneur")
 //     }
 
@@ -83,16 +119,16 @@ func UpdateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
 // }
 
 func DeleteEntrepreneurAndShops(db *gorm.DB, c *fiber.Ctx) error {
-    // Get the entrepreneur's username from the URL parameter
-    username := c.Params("username")
+    // Get the entrepreneur's id from the URL parameter
+    id := c.Params("id")
 
     // Delete all shops associated with the entrepreneur
-    if err := db.Where("entrepreneur_username = ?", username).Delete(&model.Shop{}).Error; err != nil {
+    if err := db.Where("entrepreneur_username = ?", id).Delete(&model.Shop{}).Error; err != nil {
         return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete shops")
     }
 
     // Now delete the entrepreneur
-    if err := db.Where("username = ?", username).Delete(&model.Entrepreneur{}).Error; err != nil {
+    if err := db.Where("id = ?", id).Delete(&model.Entrepreneur{}).Error; err != nil {
         return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete entrepreneur")
     }
 
