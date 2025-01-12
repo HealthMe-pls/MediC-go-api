@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -47,7 +48,10 @@ func main() {
 	createUploadsDirectory()
 
 	// ตัวแทนการสื่อสารกับ http server
-	app := fiber.New() // fiber init
+	app := fiber.New(fiber.Config{
+		JSONDecoder: json.Unmarshal,
+	})
+	 // fiber init
 
 	// Static file serving to access uploaded images via /upload/{filename}
 	app.Static("/upload", "./uploads")
@@ -71,33 +75,99 @@ func main() {
 	app.Get("/hello", func(c *fiber.Ctx) error { return c.SendString("test gogo") })
 
 	// test route
-	app.Get("/patient", func(c *fiber.Ctx) error {
-		return controller.GetPatients(db, c)
-	})
+	app.Get("/patient", func(c *fiber.Ctx) error {return controller.GetPatients(db, c)})
+	app.Get("/patient/:id", func(c *fiber.Ctx) error {return controller.GetPatientID(db, c)})
+	app.Post("/patient", func(c *fiber.Ctx) error {return controller.CreatePatient(db, c)})
+	app.Put("/patient/:id", func(c *fiber.Ctx) error {return controller.UpdatePatient(db, c)})
+	app.Delete("/patient/:id", func(c *fiber.Ctx) error {return controller.DeletePatient(db, c)})
+	app.Post("/patient/:id/images", func(c *fiber.Ctx) error {return controller.UploadImage(db, c)})
+	app.Get("/patient/:id/images", func(c *fiber.Ctx) error {return controller.GetPatientImages(db, c)})
 
-	app.Get("/patient/:id", func(c *fiber.Ctx) error {
-		return controller.GetPatientID(db, c)
-	})
+	//admin --check
+	app.Get("/admin",func(c *fiber.Ctx) error {return controller.GetAdmins(db,c)	})
+	app.Get("/admin/:username",func(c *fiber.Ctx) error {return controller.GetAdminByUsername(db,c)	})
+	app.Post("/admin/create", func(c *fiber.Ctx) error {return controller.CreateAdmin(db, c)})
+	app.Put("/admin/update/:username", func(c *fiber.Ctx) error {return controller.UpdateAdmin(db, c)})
+	app.Delete("/admin/delete/:username" ,func (c *fiber.Ctx) error  {return controller.DeleteAdmin(db, c)})
 
-	app.Post("/patient", func(c *fiber.Ctx) error {
-		return controller.CreatePatient(db, c)
-	})
+	//entrepreneur
+	app.Get("/entrepreneur",func(c *fiber.Ctx) error {return controller.GetEntrepreneur(db,c)	})
+	app.Get("/entrepreneur/:username",func(c *fiber.Ctx) error {return controller.GetEntrepreneurByUsername(db,c)	})
+	app.Post("/entrepreneur/create", func(c *fiber.Ctx) error {return controller.CreateEntrepreneur(db, c)})
+	app.Put("/entrepreneur/update/:username", func(c *fiber.Ctx) error {return controller.UpdateEntrepreneur(db, c)})
+	//Not available
+	app.Delete("/entrepreneur/delete/:username", func(c *fiber.Ctx) error {return controller.DeleteEntrepreneurAndShops(db, c)})
 
-	app.Put("/patient/:id", func(c *fiber.Ctx) error {
-		return controller.UpdatePatient(db, c)
-	})
+	//map --check
+	app.Get("/map",func(c *fiber.Ctx) error {return controller.GetMarketMap(db, c)})
+	app.Get("/map/:id", func(c *fiber.Ctx) error {return controller.GetMapByBlockID(db, c)})
+	app.Get("/shopInmap/:id",func(c *fiber.Ctx) error {return controller.GetShopInMapID(db, c)})
+	app.Post("/map/create", func(c *fiber.Ctx) error {return controller.CreateMarketMap(db, c)})
+	app.Delete("/map/delete/:block_id", func(c *fiber.Ctx) error {return controller.DeleteMarketMapsByBlockID(db, c)})
+	app.Put("/map/update/:block_id", func(c *fiber.Ctx) error {return controller.UpdateMarketMapByBlockID(db, c)})
 
-	app.Delete("/patient/:id", func(c *fiber.Ctx) error {
-		return controller.DeletePatient(db, c)
-	})
+	//shop category
+	app.Post("/shopcategory/create", func(c *fiber.Ctx) error {return controller.CreateShopCategory(db, c)})
+	app.Get("/shopcategory", func(c *fiber.Ctx) error {return controller.GetShopCategories(db, c)})
+	app.Get("/shopcategory/:id", func(c *fiber.Ctx) error {return controller.GetShopCategoryByID(db, c)})
+	app.Delete("/shopcategory/delete/:id", func(c *fiber.Ctx) error {return controller.DeleteShopCategory(db, c)})
+	app.Put("/shop-category/update/:id", func(c *fiber.Ctx) error {return controller.UpdateShopCategory(db, c)})
 
-	app.Post("/patient/:id/images", func(c *fiber.Ctx) error {
-		return controller.UploadImage(db, c)
-	})
+	//shop
+	app.Post("/shop/create", func(c *fiber.Ctx) error {	return controller.CreateShop(db, c)})
+	app.Get("/shop/:id", func(c *fiber.Ctx) error {return controller.GetShopByID(db, c)})
+	app.Put("/shop/update/:id", func(c *fiber.Ctx) error {return controller.UpdateShop(db, c)})
+	app.Delete("/shop/delete/:id", func(c *fiber.Ctx) error {return controller.DeleteShop(db, c)})
+	app.Get("/shops/category/:shop_category_id", func(c *fiber.Ctx) error {return controller.GetShopsByCategory(db, c)})
+	
+	// Workshop Routes
+	app.Get("/workshops", func(c *fiber.Ctx) error {return controller.GetWorkshops(db, c)})
+	app.Get("/workshops/:name", func(c *fiber.Ctx) error {return controller.GetWorkshopByID(db, c)})
+	app.Post("/workshops", func(c *fiber.Ctx) error {return controller.CreateWorkshop(db, c)})
+	app.Put("/workshops/:name", func(c *fiber.Ctx) error {return controller.UpdateWorkshop(db, c)})
+	//whitespace problem
+	app.Delete("/workshops/:name", func(c *fiber.Ctx) error {return controller.DeleteWorkshop(db, c)})
 
-	app.Get("/patient/:id/images", func(c *fiber.Ctx) error {
-		return controller.GetPatientImages(db, c)
-	})
+	//manage
+	app.Post("/marketDate", func(c *fiber.Ctx) error {return controller.CreateMarketOpenDate(db, c) })
+	app.Get("/marketDate/:id", func(c *fiber.Ctx) error { return controller.GetMarketOpenDate(db, c) })
+	app.Put("/marketDate/:id", func(c *fiber.Ctx) error { return controller.UpdateMarketOpenDate(db, c) })
+	app.Delete("/marketDate/:id", func(c *fiber.Ctx) error { return controller.DeleteMarketOpenDate(db, c) })
+
+	//social media
+	app.Post("/social", func(c *fiber.Ctx) error { return controller.CreateSocialMedia(db, c) })
+	app.Get("/social/:id", func(c *fiber.Ctx) error { return controller.GetSocialMedia(db, c) })
+	app.Get("/social/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetSocialMediaByShopID(db, c) })
+	app.Put("/social/:id", func(c *fiber.Ctx) error { return controller.UpdateSocialMedia(db, c) })
+	app.Delete("/social/:id", func(c *fiber.Ctx) error { return controller.DeleteSocialMedia(db, c) })
+
+	//shop open time
+	app.Post("/shopt/time", func(c *fiber.Ctx) error { return controller.CreateShopOpenDate(db, c) })
+	app.Get("/shopt/time/:id", func(c *fiber.Ctx) error { return controller.GetShopOpenDate(db, c) })
+	app.Get("/shopt/time/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetShopOpenDateByShopID(db, c) })
+	app.Put("/shopt/time/:id", func(c *fiber.Ctx) error { return controller.UpdateShopOpenDate(db, c) })
+	app.Delete("/shopt/time/:id", func(c *fiber.Ctx) error { return controller.DeleteShopOpenDate(db, c) })
+
+	//shop menu
+	app.Post("/shop/menu", func(c *fiber.Ctx) error { return controller.CreateShopMenu(db, c) })
+	app.Get("/shop/menu/:id", func(c *fiber.Ctx) error { return controller.GetShopMenu(db, c) })
+	app.Get("/shop/menu/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetShopMenuByShopID(db, c) })
+	app.Put("/shop/menu/:id", func(c *fiber.Ctx) error { return controller.UpdateShopMenu(db, c) })
+	app.Delete("/shop/menu/:id", func(c *fiber.Ctx) error { return controller.DeleteShopMenu(db, c) })
+
+	//photo
+	app.Post("/photos", func(c *fiber.Ctx) error { return controller.CreatePhoto(db, c) })
+	app.Get("/photos/:id", func(c *fiber.Ctx) error { return controller.GetPhoto(db, c) })
+	app.Get("/photos/menu/:menu_id", func(c *fiber.Ctx) error { return controller.GetPhotoByMenuID(db, c) })
+	app.Get("/photos/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetPhotoByShopID(db, c) })
+	app.Put("/photos/:id", func(c *fiber.Ctx) error { return controller.UpdatePhoto(db, c) })
+	app.Delete("/photos/:id", func(c *fiber.Ctx) error { return controller.DeletePhoto(db, c) })
+
+	//contact to admin
+	app.Post("/contacts", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
+	app.Get("/contacts/:id", func(c *fiber.Ctx) error { return controller.GetContactToAdmin(db, c) })
+	app.Put("/contacts/:id", func(c *fiber.Ctx) error { return controller.UpdateContactToAdmin(db, c) })
+	app.Delete("/contacts/:id", func(c *fiber.Ctx) error { return controller.DeleteContactToAdmin(db, c) })
 
 	app.Get("/config", getENV)
 
