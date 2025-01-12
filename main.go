@@ -117,7 +117,7 @@ func main() {
 	//shop
 	app.Post("/shop", func(c *fiber.Ctx) error {	return controller.CreateShop(db, c)})
 	app.Get("/shop/:id", func(c *fiber.Ctx) error {return controller.GetShopByID(db, c)})
-	app.Get("/shopdetail/:id", func(c *fiber.Ctx) error {return controller.GetShopDetail(db, c)})
+	// app.Get("/shopdetail/:id", func(c *fiber.Ctx) error {return controller.GetShopDetail(db, c)})
 	app.Get("/shop", func(c *fiber.Ctx) error {return controller.GetShops(db, c)})
 	app.Put("/shop/:id", func(c *fiber.Ctx) error {return controller.UpdateShop(db, c)})
 	app.Delete("/shop/:id", func(c *fiber.Ctx) error {return controller.DeleteShop(db, c)})

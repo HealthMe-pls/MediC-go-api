@@ -34,45 +34,45 @@ func GetShops(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.JSON(shops)
 }
-func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
-	shopID := c.Params("id")
+// func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
+// 	shopID := c.Params("id")
 
-	// Struct to hold the shop details along with related entities
-	var shop model.Shop
-	if err := db.Preload("ShopCategory").
-		Preload("Entrepreneur").
-		Preload("ShopOpenDates").
-		Preload("ShopMenus.Photo").
-		Preload("SocialMedia").
-		Preload("Photos").
-		First(&shop, shopID).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "Shop not found",
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to retrieve shop details",
-		})
-	}
+// 	// Struct to hold the shop details along with related entities
+// 	var shop model.Shop
+// 	if err := db.Preload("ShopCategory").
+// 		Preload("Entrepreneur").
+// 		Preload("ShopOpenDates").
+// 		Preload("ShopMenus.Photo").
+// 		Preload("SocialMedia").
+// 		Preload("Photos").
+// 		First(&shop, shopID).Error; err != nil {
+// 		if err == gorm.ErrRecordNotFound {
+// 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+// 				"error": "Shop not found",
+// 			})
+// 		}
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"error": "Failed to retrieve shop details",
+// 		})
+// 	}
 
-	// Preparing the response
-	response := fiber.Map{
-		"id":               shop.ID,
-		"name":             shop.Name,
-		"shop_category":    shop.ShopCategory,
-		"status":           shop.Status,
-		"full_description": shop.FullDescription,
-		"brief_description": shop.BriefDescription,
-		"entrepreneur":     shop.Entrepreneur,
-		"shop_open_dates":  shop.ShopOpenDates,
-		"shop_menus":       shop.ShopMenus,
-		"social_media":     shop.SocialMedia,
-		"photos":           shop.Photos,
-	}
+// 	// Preparing the response
+// 	response := fiber.Map{
+// 		"id":               shop.ID,
+// 		"name":             shop.Name,
+// 		"shop_category":    shop.ShopCategory,
+// 		"status":           shop.Status,
+// 		"full_description": shop.FullDescription,
+// 		"brief_description": shop.BriefDescription,
+// 		"entrepreneur":     shop.Entrepreneur,
+// 		"shop_open_dates":  shop.ShopOpenDates,
+// 		"shop_menus":       shop.ShopMenus,
+// 		"social_media":     shop.SocialMedia,
+// 		"photos":           shop.Photos,
+// 	}
 
-	return c.Status(fiber.StatusOK).JSON(response)
-}
+// 	return c.Status(fiber.StatusOK).JSON(response)
+// }
 
 
 func CreateShop(db *gorm.DB, c *fiber.Ctx) error {
