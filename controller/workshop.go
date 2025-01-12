@@ -12,6 +12,7 @@ func GetWorkshops(db *gorm.DB, c *fiber.Ctx) error {
 	if err := db.Find(&workshops).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to fetch workshops",
+			"details": err.Error(),
 		})
 	}
 	return c.JSON(workshops)
@@ -24,6 +25,7 @@ func GetWorkshopByID(db *gorm.DB, c *fiber.Ctx) error {
 	if err := db.First(&workshop, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Workshop not found",
+			"details": err.Error(),
 		})
 	}
 	// db.First(&workshop, "id = ?", id)
@@ -55,16 +57,19 @@ func UpdateWorkshop(db *gorm.DB, c *fiber.Ctx) error {
 	if err := db.First(&workshop, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Workshop not found",
+			"details": err.Error(),
 		})
 	}
 	if err := c.BodyParser(&workshop); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
+			"details": err.Error(),
 		})
 	}
 	if err := db.Save(&workshop).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update workshop",
+			"details": err.Error(),
 		})
 	}
 	return c.JSON(workshop)
@@ -76,6 +81,7 @@ func DeleteWorkshop(db *gorm.DB, c *fiber.Ctx) error {
 	if err := db.Delete(&model.Workshop{}, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete workshop",
+			"details": err.Error(),
 		})
 	}
 	return c.SendString("Workshop successfully deleted")

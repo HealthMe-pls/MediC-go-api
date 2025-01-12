@@ -100,8 +100,9 @@ func main() {
 
 	//map --check
 	app.Get("/map",func(c *fiber.Ctx) error {return controller.GetMarketMap(db, c)})
+	app.Get("/mapdetail",func(c *fiber.Ctx) error {return controller.GetMarketMapDetail(db, c)})
 	app.Get("/map/:id", func(c *fiber.Ctx) error {return controller.GetMapByBlockID(db, c)})
-	app.Get("/shopInmap/:id",func(c *fiber.Ctx) error {return controller.GetShopInMapID(db, c)})
+	// app.Get("/shopInmap/:id",func(c *fiber.Ctx) error {return controller.GetShopInMapID(db, c)})
 	app.Post("/map", func(c *fiber.Ctx) error {return controller.CreateMarketMap(db, c)})
 	app.Delete("/map/:block_id", func(c *fiber.Ctx) error {return controller.DeleteMarketMapsByBlockID(db, c)})
 	app.Put("/map/:block_id", func(c *fiber.Ctx) error {return controller.UpdateMarketMapByBlockID(db, c)})
@@ -111,11 +112,13 @@ func main() {
 	app.Get("/shopcategory", func(c *fiber.Ctx) error {return controller.GetShopCategories(db, c)})
 	app.Get("/shopcategory/:id", func(c *fiber.Ctx) error {return controller.GetShopCategoryByID(db, c)})
 	app.Delete("/shopcategory/:id", func(c *fiber.Ctx) error {return controller.DeleteShopCategory(db, c)})
-	app.Put("/shop-category/:id", func(c *fiber.Ctx) error {return controller.UpdateShopCategory(db, c)})
+	app.Put("/shopcategory/:id", func(c *fiber.Ctx) error {return controller.UpdateShopCategory(db, c)})
 
 	//shop
-	app.Post("/sho", func(c *fiber.Ctx) error {	return controller.CreateShop(db, c)})
+	app.Post("/shop", func(c *fiber.Ctx) error {	return controller.CreateShop(db, c)})
 	app.Get("/shop/:id", func(c *fiber.Ctx) error {return controller.GetShopByID(db, c)})
+	app.Get("/shopdetail/:id", func(c *fiber.Ctx) error {return controller.GetShopDetail(db, c)})
+	app.Get("/shop", func(c *fiber.Ctx) error {return controller.GetShops(db, c)})
 	app.Put("/shop/:id", func(c *fiber.Ctx) error {return controller.UpdateShop(db, c)})
 	app.Delete("/shop/:id", func(c *fiber.Ctx) error {return controller.DeleteShop(db, c)})
 	app.Get("/shops/category/:shop_category_id", func(c *fiber.Ctx) error {return controller.GetShopsByCategory(db, c)})
@@ -125,7 +128,6 @@ func main() {
 	app.Get("/workshops/:id", func(c *fiber.Ctx) error {return controller.GetWorkshopByID(db, c)})
 	app.Post("/workshops", func(c *fiber.Ctx) error {return controller.CreateWorkshop(db, c)})
 	app.Put("/workshops/:id", func(c *fiber.Ctx) error {return controller.UpdateWorkshop(db, c)})
-	//whitespace problem
 	app.Delete("/workshops/:id", func(c *fiber.Ctx) error {return controller.DeleteWorkshop(db, c)})
 
 	//manage

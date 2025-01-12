@@ -13,6 +13,40 @@ func GetMarketMap(db *gorm.DB,c *fiber.Ctx) error {
 	return c.JSON(marketMap)
 }
 
+func GetMarketMapDetail(db *gorm.DB, c *fiber.Ctx) error {
+	// Retrieve all market maps
+	var marketMaps []model.MarketMap
+	if err := db.Find(&marketMaps).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to retrieve market maps")
+	}
+
+	// Iterate through market maps and add shop names
+	var result []map[string]interface{}
+
+	for _, marketMap := range marketMaps {
+		// Retrieve the shop details using the ShopID
+		var shop model.Shop
+		if err := db.First(&shop, marketMap.ShopID).Error; err != nil {
+			// If shop is not found, use "no shop"
+			result = append(result, map[string]interface{}{
+				"block_id":  marketMap.BlockID,
+				"shop_id":   marketMap.ShopID,
+				"shop_name": "no shop",
+			})
+		} else {
+			// Append the block_id and shop_name to the result
+			result = append(result, map[string]interface{}{
+				"block_id":  marketMap.BlockID,
+				"shop_id":   marketMap.ShopID,
+				"shop_name": shop.Name,
+			})
+		}
+	}
+
+	// Return the result as a JSON response
+	return c.JSON(result)
+}
+
 func CreateMarketMap(db *gorm.DB, c *fiber.Ctx) error {
     // Create an instance of the MarketMap struct to bind the incoming request
     marketMap := new(model.MarketMap)
@@ -25,10 +59,10 @@ func CreateMarketMap(db *gorm.DB, c *fiber.Ctx) error {
     }
 
     // Check if the Shop with the provided ShopID exists
-    var shop model.Shop
-    if err := db.First(&shop, marketMap.ShopID).Error; err != nil {
-        return c.Status(fiber.StatusNotFound).SendString("Shop not found")
-    }
+    // var shop model.Shop
+    // if err := db.First(&shop, marketMap.ShopID).Error; err != nil {
+    //     return c.Status(fiber.StatusNotFound).SendString("Shop not found")
+    // }
 
     // Create the new MarketMap record in the database
     if result := db.Create(&marketMap); result.Error != nil {

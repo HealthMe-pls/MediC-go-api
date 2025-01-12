@@ -17,9 +17,14 @@ func GetAdmins(db *gorm.DB,c *fiber.Ctx) error {
 func GetAdminByUsername(db *gorm.DB,c *fiber.Ctx) error {
 	id := c.Params("id")
 	var admin model.Admin
-	if err := db.First(&admin, "id = ?", id).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).SendString("Admin not found")
-	}
+	// if err := db.First(&admin, "id = ?", id).Error; err != nil {
+	// 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+	// 		"error": "Admin not found",
+	// 		"details": err.Error(),
+	// 	})
+	// 	// return c.Status(fiber.StatusNotFound).SendString("Admin not found")
+	// }
+	db.First(&admin, id)
 	return c.JSON(admin)
 }
 
@@ -31,6 +36,7 @@ func CreateAdmin(db *gorm.DB, c *fiber.Ctx) error {
     if err := c.BodyParser(admin); err != nil {
         return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
             "error": "Failed to parse request body",
+			"details": err.Error(),
         })
     }
 
@@ -38,7 +44,8 @@ func CreateAdmin(db *gorm.DB, c *fiber.Ctx) error {
     if result := db.Create(&admin); result.Error != nil {
         return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
             "error": "Failed to create admin",
-        })
+			
+		})
     }
 
 
