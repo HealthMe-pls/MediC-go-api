@@ -50,7 +50,7 @@ type Shop struct {
 	ID                   uint           `gorm:"primaryKey" json:"id"`
 	Name                 string         `json:"name"`
 	ShopCategoryID       uint           `gorm:"not null" json:"shop_category_id"`
-	ShopCategory         ShopCategory   `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_category"`
+	ShopCategory         ShopCategory   `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop_category"`
 	Status               bool           `json:"status"`
 	FullDescription      string         `json:"full_description"`
 	BriefDescription     string         `json:"brief_description"`
@@ -92,9 +92,10 @@ type MarketOpenDate struct {
 // MarketMap represents the MarketMap table
 type MarketMap struct {
 	BlockID uint  `gorm:"primaryKey" json:"block_id"`
-	ShopID  uint  `gorm:"not null" json:"shop_id"` // เพิ่มฟิลด์ ShopID
-	Shop    Shop  `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
+	ShopID  *uint `json:"shop_id"` 
+	Shop    Shop  `gorm:"foreignKey:ShopID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop"`
 }
+
 
 
 // SocialMedia represents the SocialMedia table
