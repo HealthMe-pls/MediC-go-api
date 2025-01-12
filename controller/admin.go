@@ -15,9 +15,9 @@ func GetAdmins(db *gorm.DB,c *fiber.Ctx) error {
 
 // Get Admin by Username
 func GetAdminByUsername(db *gorm.DB,c *fiber.Ctx) error {
-	username := c.Params("username")
+	id := c.Params("id")
 	var admin model.Admin
-	if err := db.First(&admin, "username = ?", username).Error; err != nil {
+	if err := db.First(&admin, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).SendString("Admin not found")
 	}
 	return c.JSON(admin)
@@ -49,9 +49,9 @@ func CreateAdmin(db *gorm.DB, c *fiber.Ctx) error {
 // Update Admin
 
 func UpdateAdmin(db *gorm.DB,c *fiber.Ctx) error {
-	username := c.Params("username")
+	id := c.Params("id")
 	var admin model.Admin
-	if err := db.First(&admin, "username = ?", username).Error; err != nil {
+	if err := db.First(&admin, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).SendString("Admin not found")
 	}
 	// Parse updated data from request body
@@ -67,8 +67,8 @@ func UpdateAdmin(db *gorm.DB,c *fiber.Ctx) error {
 
 // Delete Admin
 func DeleteAdmin(db *gorm.DB,c *fiber.Ctx) error {
-	username := c.Params("username")
-	if result := db.Delete(&model.Admin{}, "username = ?", username); result.Error != nil {
+	id := c.Params("id")
+	if result := db.Delete(&model.Admin{}, "id = ?", id); result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete admin")
 	}
 	return c.SendString("Admin successfully deleted")
