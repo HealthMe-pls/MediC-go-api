@@ -91,9 +91,11 @@ type MarketOpenDate struct {
 
 // MarketMap represents the MarketMap table
 type MarketMap struct {
-	BlockID uint `gorm:"primaryKey" json:"block_id"`
-	ShopID  Shop `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_id"`
+	BlockID uint  `gorm:"primaryKey" json:"block_id"`
+	ShopID  uint  `gorm:"not null" json:"shop_id"` // เพิ่มฟิลด์ ShopID
+	Shop    Shop  `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
 }
+
 
 // SocialMedia represents the SocialMedia table
 type SocialMedia struct {
