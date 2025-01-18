@@ -26,7 +26,8 @@ func FilterShopsByKeyword(db *gorm.DB, c *fiber.Ctx) error {
 	err := db.Preload("ShopMenus").
 		Where("LOWER(name) LIKE ? OR LOWER(full_description) LIKE ? OR LOWER(brief_description) LIKE ?", 
 			lowerKeyword, lowerKeyword, lowerKeyword).
-		Or("EXISTS (SELECT 1 FROM shop_menus WHERE shop_menus.shop_id = shops.id AND LOWER(shop_menus.product_name) LIKE ?)", lowerKeyword).
+		Or("EXISTS (SELECT 1 FROM shop_menus WHERE shop_menus.shop_id = shops.id AND (LOWER(shop_menus.product_name) LIKE ? OR LOWER(shop_menus.product_description) LIKE ?))", 
+			lowerKeyword, lowerKeyword).
 		Find(&shops).Error
 
 	if err != nil {
