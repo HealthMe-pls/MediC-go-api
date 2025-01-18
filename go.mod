@@ -1,10 +1,10 @@
 module github.com/HealthMe-pls/medic-go-api
 
-
 go 1.23.3
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.5
+	golang.org/x/crypto v0.32.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
 )
@@ -12,7 +12,7 @@ require (
 require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 )
 
 require (
@@ -32,5 +32,5 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 )

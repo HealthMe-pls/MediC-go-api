@@ -173,6 +173,12 @@ func GetContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.JSON(contactToAdmin)
 }
+//get All contact
+func GetAllContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
+	var contactToAdmins []model.ContactToAdmin
+	db.Find(&contactToAdmins)
+	return c.JSON(contactToAdmins)
+}
 
 // UpdateContactToAdmin updates a ContactToAdmin entry by ID
 func UpdateContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {

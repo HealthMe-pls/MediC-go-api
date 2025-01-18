@@ -172,9 +172,14 @@ func main() {
 	app.Delete("/contacts/:id", func(c *fiber.Ctx) error { return controller.DeleteContactToAdmin(db, c) })
 
 	//filter
-	//how to use filter-shops?keyword=coffee
+	//how to use /filter-shops?keyword=coffee
 	app.Get("/filter-shops", func(c *fiber.Ctx) error {	return controller.FilterShopsByKeyword(db, c)})
 
+
+	//login
+	app.Post("/login/entrepreneur", func(c *fiber.Ctx) error {return controller.LoginEntrepreneur(db, c)})
+	app.Post("/login/admin", func(c *fiber.Ctx) error { return controller.LoginAdmin(db, c)})
+	
 	app.Get("/config", getENV)
 
 	app.Listen(":8080")
