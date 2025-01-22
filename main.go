@@ -102,7 +102,7 @@ func main() {
 	app.Get("/map",func(c *fiber.Ctx) error {return controller.GetMarketMap(db, c)})
 	app.Get("/mapdetail",func(c *fiber.Ctx) error {return controller.GetMarketMapDetail(db, c)})
 	app.Get("/map/:id", func(c *fiber.Ctx) error {return controller.GetMapByBlockID(db, c)})
-	// app.Get("/shopInmap/:id",func(c *fiber.Ctx) error {return controller.GetShopInMapID(db, c)})
+	app.Get("/shopInmap/:id",func(c *fiber.Ctx) error {return controller.GetShopInMapID(db, c)})
 	app.Post("/map", func(c *fiber.Ctx) error {return controller.CreateMarketMap(db, c)})
 	app.Delete("/map/:block_id", func(c *fiber.Ctx) error {return controller.DeleteMarketMapsByBlockID(db, c)})
 	app.Put("/map/:block_id", func(c *fiber.Ctx) error {return controller.UpdateMarketMapByBlockID(db, c)})
