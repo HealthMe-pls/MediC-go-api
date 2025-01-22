@@ -78,23 +78,45 @@ func CreateMarketMap(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 func GetShopInMapID(db *gorm.DB, c *fiber.Ctx) error {
-    id := c.Params("id")  // Get the shop ID from the URL parameter
-    var shop model.Shop
+    // Get the block_id from the URL parameter
+    blockID := c.Params("id")
 
-    // Query the Shop table by ID
-    if err := db.Where("id = ?", id).First(&shop).Error; err != nil {
-        // If no shop is found, return a 404 status with a message
-        return c.Status(fiber.StatusNotFound).SendString("No shop found with this ID")
+    // Convert block_id to integer (optional based on your application)
+    blockIDUint, err := strconv.Atoi(blockID)
+    if err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "Invalid block_id format",
+        })
     }
 
-    // Extract the shop name
-    shopName := shop.Name
+    // Query the MarketMap to get the shop_id associated with the block_id
+    var marketMap model.MarketMap
+    if err := db.Where("block_id = ?", blockIDUint).First(&marketMap).Error; err != nil {
+        if err == gorm.ErrRecordNotFound {
+            return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+                "error": "Market map not found for the provided block_id",
+            })
+        }
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error":   "Failed to retrieve market map",
+            "details": err.Error(),
+        })
+    }
 
-    // Return the shop name as JSON
-    return c.JSON(fiber.Map{
-        "shop_name": shopName,
-    })
+    // Check if shop_id exists in the retrieved market map
+    if marketMap.ShopID == nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+            "error": "No shop associated with the provided block_id",
+        })
+    }
+
+    // Call GetShopByID to fetch the shop details using the shop_id
+    shopID := strconv.Itoa(int(*marketMap.ShopID)) // Convert uint to string
+    c.Params("id", shopID) // Dynamically set the "id" parameter for the next handler
+
+    return GetShopByID(db, c)
 }
+
 
 func DeleteMarketMapsByBlockID(db *gorm.DB, c *fiber.Ctx) error {
     // Get the BlockID from the URL (parameter)

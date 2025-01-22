@@ -15,13 +15,13 @@ func Shop(db *gorm.DB,c *fiber.Ctx) error {
 func GetShopByID(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
 	var shop model.Shop
-	// if err := db.First(&shop, id).Error; err != nil {
-	// 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-	// 		"error": "Shop not found",
-	// 		"details": err.Error(),
-	// 	})
-	// }
-	db.First(&shop, id)
+	if err := db.First(&shop, id).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Shop not found",
+			"details": err.Error(),
+		})
+	}
+	// db.First(&shop, id)
 	return c.JSON(shop)
 }
 func GetShops(db *gorm.DB, c *fiber.Ctx) error {
