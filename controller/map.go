@@ -2,6 +2,7 @@ package controller
 
 import (
 	"strconv"
+    "fmt"
 
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -141,6 +142,45 @@ func DeleteMarketMapsByBlockID(db *gorm.DB, c *fiber.Ctx) error {
     // Successfully deleted all MarketMaps for the BlockID
     return c.SendString("All MarketMaps for the BlockID successfully deleted")
 }
+func UpdateAllMarketMaps(db *gorm.DB, c *fiber.Ctx) error {
+    // Parse the request body for a list of updates
+    var updates []fiber.Map
+    if err := c.BodyParser(&updates); err != nil {
+        return c.Status(fiber.StatusBadRequest).SendString("Failed to parse request body")
+    }
+
+    for _, update := range updates {
+        blockID, ok := update["block_id"].(float64) // Ensure block_id is provided and is a valid number
+        if !ok {
+            return c.Status(fiber.StatusBadRequest).SendString("Invalid or missing block_id in one of the updates")
+        }
+
+        // Convert block_id to uint
+        blockIDUint := uint(blockID)
+
+        // Fetch the existing MarketMap record
+        var marketMap model.MarketMap
+        if err := db.First(&marketMap, "block_id = ?", blockIDUint).Error; err != nil {
+            return c.Status(fiber.StatusNotFound).SendString(fmt.Sprintf("MarketMap with block_id %d not found", blockIDUint))
+        }
+
+        // Update fields dynamically from the update map
+        for key, value := range update {
+            if key == "block_id" {
+                continue // Skip block_id to avoid accidental changes
+            }
+
+            // Dynamically set field values
+            if err := db.Model(&marketMap).Update(key, value).Error; err != nil {
+                return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Failed to update field %s for block_id %d", key, blockIDUint))
+            }
+        }
+    }
+
+    // Return success response
+    return c.Status(fiber.StatusOK).SendString("All MarketMaps updated successfully")
+}
+
 
 func UpdateMarketMapByBlockID(db *gorm.DB, c *fiber.Ctx) error {
     // Get the block_id from the URL parameters

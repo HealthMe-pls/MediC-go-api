@@ -101,12 +101,18 @@ func GetShopOpenDate(db *gorm.DB, c *fiber.Ctx) error {
 // GetShopOpenDateByShopID retrieves ShopOpenDate entries by Shop ID
 func GetShopOpenDateByShopID(db *gorm.DB, c *fiber.Ctx) error {
 	shopID := c.Params("shop_id")
-	var shopOpenDates []model.ShopOpenDate
-	if err := db.Where("shop_id = ?", shopID).Find(&shopOpenDates).Error; err != nil {
+	var shopOpenDates []map[string]interface{}
+
+	// Query the required fields and map the results directly
+	if err := db.Model(&model.ShopOpenDate{}).
+		Select("id, start_time, end_time").
+		Where("shop_id = ?", shopID).
+		Find(&shopOpenDates).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve shop open dates",
 		})
 	}
+
 	return c.JSON(shopOpenDates)
 }
 

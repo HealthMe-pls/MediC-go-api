@@ -2,7 +2,8 @@ package controller
 
 import (
 	"strconv"
-
+	"fmt"
+	// "github.com/HealthMe-pls/medic-go-api/controller"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -34,45 +35,204 @@ func GetShops(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.JSON(shops)
 }
-// func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
-// 	shopID := c.Params("id")
 
-// 	// Struct to hold the shop details along with related entities
-// 	var shop model.Shop
-// 	if err := db.Preload("ShopCategory").
-// 		Preload("Entrepreneur").
-// 		Preload("ShopOpenDates").
-// 		Preload("ShopMenus.Photo").
-// 		Preload("SocialMedia").
-// 		Preload("Photos").
-// 		First(&shop, shopID).Error; err != nil {
-// 		if err == gorm.ErrRecordNotFound {
-// 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-// 				"error": "Shop not found",
-// 			})
-// 		}
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-// 			"error": "Failed to retrieve shop details",
-// 		})
-// 	}
+func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
+	var shops []model.Shop
 
-// 	// Preparing the response
-// 	response := fiber.Map{
-// 		"id":               shop.ID,
-// 		"name":             shop.Name,
-// 		"shop_category":    shop.ShopCategory,
-// 		"status":           shop.Status,
-// 		"full_description": shop.FullDescription,
-// 		"brief_description": shop.BriefDescription,
-// 		"entrepreneur":     shop.Entrepreneur,
-// 		"shop_open_dates":  shop.ShopOpenDates,
-// 		"shop_menus":       shop.ShopMenus,
-// 		"social_media":     shop.SocialMedia,
-// 		"photos":           shop.Photos,
-// 	}
+	// Fetch basic shop details with Entrepreneur and ShopCategory preloaded
+	if err := db.Preload("Entrepreneur").Preload("ShopCategory").Find(&shops).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve shops",
+			"details": err.Error(),
+		})
+	}
 
-// 	return c.Status(fiber.StatusOK).JSON(response)
-// }
+	// Construct the detailed response
+	var shopResponses []fiber.Map
+	for _, shop := range shops {
+		shopID := shop.ID
+
+		// Fetch shop open dates
+		shopOpenDates, err := getShopOpenDates(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve shop open dates",
+				"details": err.Error(),
+			})
+		}
+
+		// Fetch shop menus
+		shopMenus, err := getShopMenus(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve shop menus",
+				"details": err.Error(),
+			})
+		}
+
+		// Fetch social media
+		socialMedias, err := getSocialMedia(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve social media entries",
+				"details": err.Error(),
+			})
+		}
+
+		// Construct the shop response
+		shopResponses = append(shopResponses, fiber.Map{
+			"shop_id":          shop.ID,
+			"name":             shop.Name,
+			"entrepreneur_id":  shop.Entrepreneur.ID,
+			"entrepreneur":     shop.Entrepreneur.Title + " " + shop.Entrepreneur.FirstName + " " + shop.Entrepreneur.MiddleName + " " + shop.Entrepreneur.LastName,
+			"category_id":      shop.ShopCategory.ID,
+			"category":         shop.ShopCategory.Name,
+			"status":           shop.Status,
+			"full_description": shop.FullDescription,
+			"brief_description": shop.BriefDescription,
+			"shop_open_dates":  shopOpenDates,
+			"menus":            shopMenus,
+			"social_media":     socialMedias,
+		})
+	}
+
+	return c.JSON(shopResponses)
+}
+func stringToUint(shopID string) (uint, error) {
+    // Log shopID to verify it
+    fmt.Println("Received shopID:", shopID)
+
+    // Try to convert the string to uint
+    id, err := strconv.ParseUint(shopID, 10, 32)
+    if err != nil {
+        // Log error for debugging
+        fmt.Println("Error parsing shopID:", err)
+        return 0, err
+    }
+
+    return uint(id), nil
+}
+
+func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
+	shopID := c.Params("id") // shop_id is still a string
+	fmt.Println("shopID from URL parameter:", shopID)
+
+	// Convert the string shopID to uint
+	shopIDUint, err := stringToUint(shopID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid shop ID",
+		})
+	}
+	// Fetch a single shop by ID with Entrepreneur and ShopCategory preloaded
+	var shop model.Shop
+	if err := db.Preload("Entrepreneur").Preload("ShopCategory").First(&shop, "id = ?", shopIDUint).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve shop",
+			"details": err.Error(),
+		})
+	}
+
+	// Fetch related data using helper functions
+	shopOpenDates, err := getShopOpenDates(db, shopIDUint) // Pass shopID as uint to helper function
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve shop open dates",
+			"details": err.Error(),
+		})
+	}
+
+	shopMenus, err := getShopMenus(db, shopIDUint) // Pass shopID as uint to helper function
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve shop menus",
+			"details": err.Error(),
+		})
+	}
+
+	socialMedias, err := getSocialMedia(db, shopIDUint) // Pass shopID as uint to helper function
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve social media entries",
+			"details": err.Error(),
+		})
+	}
+
+	// Construct the shop response
+	shopResponse := fiber.Map{
+		"shop_id":          shop.ID,
+		"name":             shop.Name,
+		"entrepreneur_id":  shop.Entrepreneur.ID,
+		"entrepreneur":     shop.Entrepreneur.Title + " " + shop.Entrepreneur.FirstName + " " + shop.Entrepreneur.MiddleName + " " + shop.Entrepreneur.LastName,
+		"category_id":      shop.ShopCategory.ID,
+		"category":         shop.ShopCategory.Name,
+		"status":           shop.Status,
+		"full_description": shop.FullDescription,
+		"brief_description": shop.BriefDescription,
+		"shop_open_dates":  shopOpenDates,
+		"menus":            shopMenus,
+		"social_media":     socialMedias,
+	}
+
+	return c.JSON(shopResponse)
+}
+
+func getShopOpenDates(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
+	var shopOpenDates []model.ShopOpenDate
+	if err := db.Where("shop_id = ?", shopID).Find(&shopOpenDates).Error; err != nil {
+		return nil, err
+	}
+
+	var result []fiber.Map
+	for _, date := range shopOpenDates {
+		result = append(result, fiber.Map{
+			"id":         date.ID,
+			"start_time": date.StartTime,
+			"end_time":   date.EndTime,
+		})
+	}
+	return result, nil
+}
+
+// Helper function to fetch shop menus
+func getShopMenus(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
+	var shopMenus []model.ShopMenu
+	if err := db.Where("shop_id = ?", shopID).Find(&shopMenus).Error; err != nil {
+		return nil, err
+	}
+
+	var result []fiber.Map
+	for _, menu := range shopMenus {
+		result = append(result, fiber.Map{
+			"id":                 menu.ID,
+			"product_name":       menu.ProductName,
+			"product_description": menu.ProductDescription,
+			"price":              menu.Price,
+			"photo":              menu.Photo, // Adjust this if Photo is a complex object
+		})
+	}
+	return result, nil
+}
+
+// Helper function to fetch social media
+func getSocialMedia(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
+	var socialMedias []model.SocialMedia
+	if err := db.Where("shop_id = ?", shopID).Find(&socialMedias).Error; err != nil {
+		return nil, err
+	}
+
+	var result []fiber.Map
+	for _, social := range socialMedias {
+		result = append(result, fiber.Map{
+			"id":       social.ID,
+			"platform": social.Platform,
+			"link":     social.Link,
+		})
+	}
+	return result, nil
+}
+
+
 
 
 func CreateShop(db *gorm.DB, c *fiber.Ctx) error {
@@ -193,14 +353,21 @@ func GetSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
 // GetSocialMediaByShopID retrieves SocialMedia entries by Shop ID
 func GetSocialMediaByShopID(db *gorm.DB, c *fiber.Ctx) error {
 	shopID := c.Params("shop_id")
-	var socialMedias []model.SocialMedia
-	if err := db.Where("shop_id = ?", shopID).Find(&socialMedias).Error; err != nil {
+	var socialMedias []map[string]interface{}
+
+	// Query specific fields
+	if err := db.Model(&model.SocialMedia{}).
+		Select("id, platform, link").
+		Where("shop_id = ?", shopID).
+		Find(&socialMedias).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve social media entries",
 		})
 	}
+
 	return c.JSON(socialMedias)
 }
+
 
 // UpdateSocialMedia updates a SocialMedia entry by ID
 func UpdateSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
@@ -270,14 +437,21 @@ func GetShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 // GetShopMenuByShopID retrieves ShopMenu entries by Shop ID
 func GetShopMenuByShopID(db *gorm.DB, c *fiber.Ctx) error {
 	shopID := c.Params("shop_id")
-	var shopMenus []model.ShopMenu
-	if err := db.Where("shop_id = ?", shopID).Find(&shopMenus).Error; err != nil {
+	var shopMenus []map[string]interface{}
+
+	// Query specific fields
+	if err := db.Model(&model.ShopMenu{}).
+		Select("id, product_description, price, product_name, photo").
+		Where("shop_id = ?", shopID).
+		Find(&shopMenus).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve shop menus",
 		})
 	}
+
 	return c.JSON(shopMenus)
 }
+
 
 
 // UpdateShopMenu updates a ShopMenu entry by ID

@@ -106,6 +106,8 @@ func main() {
 	app.Post("/map", func(c *fiber.Ctx) error { return controller.CreateMarketMap(db, c) })
 	app.Delete("/map/:block_id", func(c *fiber.Ctx) error { return controller.DeleteMarketMapsByBlockID(db, c) })
 	app.Put("/map/:block_id", func(c *fiber.Ctx) error { return controller.UpdateMarketMapByBlockID(db, c) })
+	app.Put("/Allmap", func(c *fiber.Ctx) error { return controller.UpdateAllMarketMaps(db, c) })
+	
 	//name
 	app.Get("/mapN/:block_name", func(c *fiber.Ctx) error { return controller.GetMapByBlockName(db, c) })
 	app.Delete("/mapN/:block_name", func(c *fiber.Ctx) error { return controller.DeleteMarketMapsByBlockName(db, c) })
@@ -121,7 +123,9 @@ func main() {
 	//shop
 	app.Post("/shop", func(c *fiber.Ctx) error { return controller.CreateShop(db, c) })
 	app.Get("/shop/:id", func(c *fiber.Ctx) error { return controller.GetShopByID(db, c) })
-	// app.Get("/shopdetail/:id", func(c *fiber.Ctx) error {return controller.GetShopDetail(db, c)})
+	app.Get("/shopdetail", func(c *fiber.Ctx) error {return controller.GetShopDetail(db, c)})
+	app.Get("/shopdetail/:id", func(c *fiber.Ctx) error {return controller.GetShopDetailByID(db, c)})
+	
 	app.Get("/shop", func(c *fiber.Ctx) error { return controller.GetShops(db, c) })
 	app.Put("/shop/:id", func(c *fiber.Ctx) error { return controller.UpdateShop(db, c) })
 	app.Delete("/shop/:id", func(c *fiber.Ctx) error { return controller.DeleteShop(db, c) })
@@ -217,7 +221,7 @@ func SetupDatabase() *gorm.DB {
 	fmt.Print(dsn)
 	if dsn == "" {
 		// Default for development
-		dsn = "user:12345678@tcp(152.42.240.7:3306)/BFM?charset=utf8mb4&parseTime=True&loc=Local"
+		dsn = "user:12345678@tcp(127.0.0.1:3306)/BFM?charset=utf8mb4&parseTime=True&loc=Local"
 	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: newLogger})
