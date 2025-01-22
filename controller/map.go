@@ -30,6 +30,7 @@ func GetMarketMapDetail(db *gorm.DB, c *fiber.Ctx) error {
 			// If shop is not found, use "no shop"
 			result = append(result, map[string]interface{}{
 				"block_id":  marketMap.BlockID,
+                "block_name": marketMap.BlockName,
 				"shop_id":   marketMap.ShopID,
 				"shop_name": "no shop",
 			})
@@ -37,6 +38,7 @@ func GetMarketMapDetail(db *gorm.DB, c *fiber.Ctx) error {
 			// Append the block_id and shop_name to the result
 			result = append(result, map[string]interface{}{
 				"block_id":  marketMap.BlockID,
+                "block_name": marketMap.BlockName,
 				"shop_id":   marketMap.ShopID,
 				"shop_name": shop.Name,
 			})
@@ -158,6 +160,61 @@ func GetMapByBlockID(db *gorm.DB, c *fiber.Ctx) error {
     // Find the map by block ID
     var marketMap model.MarketMap
     if err := db.Preload("Shop").First(&marketMap, "block_id = ?", id).Error; err != nil {
+        if gorm.ErrRecordNotFound == err {
+            return c.Status(fiber.StatusNotFound).SendString("Market map not found")
+        }
+        return c.Status(fiber.StatusInternalServerError).SendString("Failed to retrieve market map")
+    }
+
+    // Return the market map as JSON
+    return c.Status(fiber.StatusOK).JSON(marketMap)
+}
+
+func DeleteMarketMapsByBlockName(db *gorm.DB, c *fiber.Ctx) error {
+    // Get the BlockName from the URL parameters
+    blockName := c.Params("block_name")
+
+    // Delete all MarketMap entries for the specified BlockName
+    if err := db.Where("block_name = ?", blockName).Delete(&model.MarketMap{}).Error; err != nil {
+        // Return an internal server error if deletion fails
+        return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete MarketMaps for BlockName")
+    }
+
+    // Successfully deleted all MarketMaps for the BlockName
+    return c.SendString("All MarketMaps for the BlockName successfully deleted")
+}
+
+func UpdateMarketMapByBlockName(db *gorm.DB, c *fiber.Ctx) error {
+    // Get the BlockName from the URL parameters
+    blockName := c.Params("block_name")
+
+    // Fetch the existing MarketMap record
+    var marketMap model.MarketMap
+    if err := db.First(&marketMap, "block_name = ?", blockName).Error; err != nil {
+        return c.Status(fiber.StatusNotFound).SendString("MarketMap with specified BlockName not found")
+    }
+
+    // Parse the request body to get updated fields
+    if err := c.BodyParser(&marketMap); err != nil {
+        return c.Status(fiber.StatusBadRequest).SendString("Failed to parse request body")
+    }
+
+    // Save the updated MarketMap back to the database
+    if err := db.Save(&marketMap).Error; err != nil {
+        return c.Status(fiber.StatusInternalServerError).SendString("Failed to update MarketMap")
+    }
+
+    // Return the updated MarketMap as JSON
+    return c.Status(fiber.StatusOK).JSON(marketMap)
+}
+
+func GetMapByBlockName(db *gorm.DB, c *fiber.Ctx) error {
+    // Get the BlockName from the URL parameters
+    blockName := c.Params("block_name")
+
+    // Find the map by BlockName
+    var marketMap model.MarketMap
+    if err := db.Preload("Shop").First(&marketMap, "block_name = ?", blockName).Error; err != nil {
         if gorm.ErrRecordNotFound == err {
             return c.Status(fiber.StatusNotFound).SendString("Market map not found")
         }
