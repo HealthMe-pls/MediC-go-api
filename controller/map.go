@@ -2,6 +2,7 @@ package controller
 
 import (
 	"strconv"
+
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -31,6 +32,7 @@ func GetMarketMapDetail(db *gorm.DB, c *fiber.Ctx) error {
 			result = append(result, map[string]interface{}{
 				"block_id":  marketMap.BlockID,
                 "block_name": marketMap.BlockName,
+                "block_zone": marketMap.BlockZone,
 				"shop_id":   marketMap.ShopID,
 				"shop_name": "no shop",
 			})
@@ -39,6 +41,7 @@ func GetMarketMapDetail(db *gorm.DB, c *fiber.Ctx) error {
 			result = append(result, map[string]interface{}{
 				"block_id":  marketMap.BlockID,
                 "block_name": marketMap.BlockName,
+                "block_zone": marketMap.BlockZone,
 				"shop_id":   marketMap.ShopID,
 				"shop_name": shop.Name,
 			})

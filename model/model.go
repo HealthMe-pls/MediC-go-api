@@ -93,6 +93,7 @@ type MarketOpenDate struct {
 type MarketMap struct {
 	BlockID uint  `gorm:"primaryKey" json:"block_id"`
 	BlockName string  `json:"block_name"`
+	BlockZone string  `json:"block_zone"`
 	ShopID  *uint `json:"shop_id"`
 	Shop    Shop  `gorm:"foreignKey:ShopID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop"`
 }
