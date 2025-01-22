@@ -106,6 +106,10 @@ func main() {
 	app.Post("/map", func(c *fiber.Ctx) error {return controller.CreateMarketMap(db, c)})
 	app.Delete("/map/:block_id", func(c *fiber.Ctx) error {return controller.DeleteMarketMapsByBlockID(db, c)})
 	app.Put("/map/:block_id", func(c *fiber.Ctx) error {return controller.UpdateMarketMapByBlockID(db, c)})
+	//name
+	app.Get("/mapN/:block_name", func(c *fiber.Ctx) error {return controller.GetMapByBlockName(db, c)})
+	app.Delete("/mapN/:block_name", func(c *fiber.Ctx) error {return controller.DeleteMarketMapsByBlockName(db, c)})
+	app.Put("/mapN/:block_name", func(c *fiber.Ctx) error {return controller.UpdateMarketMapByBlockName(db, c)})
 
 	//shop category
 	app.Post("/shopcategory", func(c *fiber.Ctx) error {return controller.CreateShopCategory(db, c)})
