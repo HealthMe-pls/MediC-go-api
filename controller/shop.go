@@ -1,8 +1,9 @@
 package controller
 
 import (
-	"strconv"
 	"fmt"
+	"strconv"
+
 	// "github.com/HealthMe-pls/medic-go-api/controller"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -79,6 +80,15 @@ func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
 			})
 		}
 
+		// Fetch all photos related to the shop by shopID
+		shopPhotos, err := getPhotosByShopID(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve photos",
+				"details": err.Error(),
+			})
+		}
+
 		// Construct the shop response
 		shopResponses = append(shopResponses, fiber.Map{
 			"shop_id":          shop.ID,
@@ -90,6 +100,7 @@ func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
 			"status":           shop.Status,
 			"full_description": shop.FullDescription,
 			"brief_description": shop.BriefDescription,
+			"photos":           shopPhotos, // Updated to include all photos related to the shop
 			"shop_open_dates":  shopOpenDates,
 			"menus":            shopMenus,
 			"social_media":     socialMedias,
@@ -98,6 +109,7 @@ func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(shopResponses)
 }
+
 func stringToUint(shopID string) (uint, error) {
     // Log shopID to verify it
     fmt.Println("Received shopID:", shopID)
@@ -124,6 +136,7 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 			"error": "Invalid shop ID",
 		})
 	}
+
 	// Fetch a single shop by ID with Entrepreneur and ShopCategory preloaded
 	var shop model.Shop
 	if err := db.Preload("Entrepreneur").Preload("ShopCategory").First(&shop, "id = ?", shopIDUint).Error; err != nil {
@@ -134,7 +147,7 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	// Fetch related data using helper functions
-	shopOpenDates, err := getShopOpenDates(db, shopIDUint) // Pass shopID as uint to helper function
+	shopOpenDates, err := getShopOpenDates(db, shopIDUint) // Fetch shop open dates
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Failed to retrieve shop open dates",
@@ -142,7 +155,7 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
-	shopMenus, err := getShopMenus(db, shopIDUint) // Pass shopID as uint to helper function
+	shopMenus, err := getShopMenus(db, shopIDUint) // Fetch shop menus
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Failed to retrieve shop menus",
@@ -150,10 +163,19 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
-	socialMedias, err := getSocialMedia(db, shopIDUint) // Pass shopID as uint to helper function
+	socialMedias, err := getSocialMedia(db, shopIDUint) // Fetch social media links
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Failed to retrieve social media entries",
+			"details": err.Error(),
+		})
+	}
+
+	// Fetch all photos related to the shop using shopID
+	shopPhotos, err := getPhotosByShopID(db, shopIDUint)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve shop photos",
 			"details": err.Error(),
 		})
 	}
@@ -169,6 +191,7 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 		"status":           shop.Status,
 		"full_description": shop.FullDescription,
 		"brief_description": shop.BriefDescription,
+		"photos":           shopPhotos, // Include all photos related to the shop
 		"shop_open_dates":  shopOpenDates,
 		"menus":            shopMenus,
 		"social_media":     socialMedias,
@@ -176,6 +199,7 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(shopResponse)
 }
+
 
 func getShopOpenDates(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 	var shopOpenDates []model.ShopOpenDate
@@ -203,16 +227,22 @@ func getShopMenus(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 
 	var result []fiber.Map
 	for _, menu := range shopMenus {
+		// Fetch all photos related to the menu by MenuID
+		menuPhotos, err := getPhotosByMenuID(db, menu.ID)
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, fiber.Map{
 			"id":                 menu.ID,
 			"product_name":       menu.ProductName,
 			"product_description": menu.ProductDescription,
 			"price":              menu.Price,
-			"photo":              menu.Photo, // Adjust this if Photo is a complex object
+			"photos":             menuPhotos, // Include all photos related to the menu
 		})
 	}
 	return result, nil
 }
+
 
 // Helper function to fetch social media
 func getSocialMedia(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
@@ -227,6 +257,38 @@ func getSocialMedia(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 			"id":       social.ID,
 			"platform": social.Platform,
 			"link":     social.Link,
+		})
+	}
+	return result, nil
+}
+
+func getPhotosByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
+	var photos []model.Photo
+	if err := db.Where("shop_id = ?", shopID).Find(&photos).Error; err != nil {
+		return nil, err
+	}
+
+	var result []fiber.Map
+	for _, photo := range photos {
+		result = append(result, fiber.Map{
+			"photo_id": photo.ID,
+			"pathfile": photo.PathFile,
+		})
+	}
+	return result, nil
+}
+
+func getPhotosByMenuID(db *gorm.DB, menuID uint) ([]fiber.Map, error) {
+	var photos []model.Photo
+	if err := db.Where("menu_id = ?", menuID).Find(&photos).Error; err != nil {
+		return nil, err
+	}
+
+	var result []fiber.Map
+	for _, photo := range photos {
+		result = append(result, fiber.Map{
+			"photo_id": photo.ID,
+			"pathfile": photo.PathFile,
 		})
 	}
 	return result, nil
