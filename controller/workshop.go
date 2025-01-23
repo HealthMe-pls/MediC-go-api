@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -9,28 +10,108 @@ import (
 // GetAllWorkshops retrieves all workshops
 func GetWorkshops(db *gorm.DB, c *fiber.Ctx) error {
 	var workshops []model.Workshop
+
+	// Fetch all workshops
 	if err := db.Find(&workshops).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch workshops",
+			"error":   "Failed to fetch workshops",
 			"details": err.Error(),
 		})
 	}
-	return c.JSON(workshops)
+
+	// Construct the response
+	var workshopResponses []fiber.Map
+	for _, workshop := range workshops {
+		// Fetch photos for each workshop
+		photos, err := getPhotosByWorkshopID(db, workshop.ID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to fetch photos for workshop",
+				"details": err.Error(),
+			})
+		}
+
+		// Add workshop details to the response
+		workshopResponses = append(workshopResponses, fiber.Map{
+			"id":          workshop.ID,
+			"name":        workshop.Name,
+			"description": workshop.Description,
+			"price":       workshop.Price,
+			"language":    workshop.Language,
+			"instructor":  workshop.Instructor,
+			"start_time":  workshop.StartTime,
+			"end_time":    workshop.EndTime,
+			"date":        workshop.Date,
+			"photos":      photos,
+		})
+	}
+
+	return c.JSON(workshopResponses)
 }
 
-// GetWorkshopByID retrieves a workshop by its ID
+
+// GetWorkshopByID retrieves a workshop by its ID, including photos
 func GetWorkshopByID(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
+
+	// Fetch the workshop by ID
 	var workshop model.Workshop
 	if err := db.First(&workshop, "id = ?", id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Workshop not found",
+			"error":   "Workshop not found",
 			"details": err.Error(),
 		})
 	}
-	// db.First(&workshop, "id = ?", id)
-	return c.JSON(workshop)
+
+	// Fetch photos for the workshop
+	photos, err := getPhotosByWorkshopID(db, workshop.ID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to fetch photos for workshop",
+			"details": err.Error(),
+		})
+	}
+
+	// Construct the workshop response
+	workshopResponse := fiber.Map{
+		"id":          workshop.ID,
+		"name":        workshop.Name,
+		"description": workshop.Description,
+		"price":       workshop.Price,
+		"language":    workshop.Language,
+		"instructor":  workshop.Instructor,
+		"start_time":  workshop.StartTime,
+		"end_time":    workshop.EndTime,
+		"date":        workshop.Date,
+		"photos":      photos,
+	}
+
+	return c.JSON(workshopResponse)
 }
+
+
+
+// Helper function to fetch photos by workshop ID
+func getPhotosByWorkshopID(db *gorm.DB, workshopID uint) ([]fiber.Map, error) {
+	var photos []model.Photo
+
+	// Query the database for photos associated with the given workshop ID
+	if err := db.Where("workshop_id = ?", workshopID).Find(&photos).Error; err != nil {
+		return nil, fmt.Errorf("could not fetch photos for workshop ID %d: %v", workshopID, err)
+	}
+
+	// Transform the photos into a response-friendly format
+	var result []fiber.Map
+	for _, photo := range photos {
+		result = append(result, fiber.Map{
+			"photo_id": photo.ID,
+			"pathfile": photo.PathFile,
+		})
+	}
+
+	return result, nil
+}
+
 
 // CreateWorkshop creates a new workshop
 func CreateWorkshop(db *gorm.DB, c *fiber.Ctx) error {
