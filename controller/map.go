@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"fmt"
 	"strconv"
-    "fmt"
 
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -36,6 +36,7 @@ func GetMarketMapDetail(db *gorm.DB, c *fiber.Ctx) error {
                 "block_zone": marketMap.BlockZone,
 				"shop_id":   marketMap.ShopID,
 				"shop_name": "no shop",
+                "category_id": "no categoory",
 			})
 		} else {
 			// Append the block_id and shop_name to the result
@@ -45,6 +46,7 @@ func GetMarketMapDetail(db *gorm.DB, c *fiber.Ctx) error {
                 "block_zone": marketMap.BlockZone,
 				"shop_id":   marketMap.ShopID,
 				"shop_name": shop.Name,
+                "category_id": shop.ShopCategoryID,
 			})
 		}
 	}
