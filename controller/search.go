@@ -42,7 +42,7 @@ func SearchShopsByKeyword(db *gorm.DB, c *fiber.Ctx) error {
 	// Step 2: Search for shops matching the keyword in their menus
 	var shopMenus []model.ShopMenu
 	if err := db.Preload("Shop"). // Preload the associated Shop for ShopMenu
-		Where("LOWER(product_name) LIKE ? OR LOWER(product_description) LIKE ?", lowerKeyword, lowerKeyword).
+		Where("LOWER(product_name) LIKE ?", lowerKeyword).
 		Find(&shopMenus).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Failed to search shop menus",
