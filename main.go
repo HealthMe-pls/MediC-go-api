@@ -180,8 +180,8 @@ func main() {
 	app.Delete("/contacts/:id", func(c *fiber.Ctx) error { return controller.DeleteContactToAdmin(db, c) })
 
 	//filter
-	//how to use filter-shops?keyword=coffee
-	app.Get("/filter-shops", func(c *fiber.Ctx) error { return controller.FilterShopsByKeyword(db, c) })
+	//how to use search-shops?keyword=coffee
+	app.Get("/search-shops", func(c *fiber.Ctx) error { return controller.SearchShopsByKeyword(db, c) })
 
 	app.Get("/config", getENV)
 
