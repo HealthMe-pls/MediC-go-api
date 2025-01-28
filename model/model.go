@@ -171,33 +171,29 @@ type TempShop struct {
 	TempID       uint          `gorm:"primaryKey" json:"id"`
 	ShopID       *uint         `json:"shop_id"`
 	Status       string        `json:"status"`
-	DeletePhoto  []Photo       `constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_photo"`
-	DeleteSocial []SocialMedia `constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_social"`
-	DeleteMenu   []ShopMenu    `constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_menu"`
+	DeletePhoto  UintSlice     `gorm:"type:json" json:"delete_photo"`  // เก็บเป็น JSON
+	DeleteSocial UintSlice     `gorm:"type:json" json:"delete_social"` // เก็บเป็น JSON
+	DeleteMenu   UintSlice     `gorm:"type:json" json:"delete_menu"`   // เก็บเป็น JSON
 	ShopMenus    []ShopMenu    `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_menus"`
 	SocialMedia  []SocialMedia `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"social_media"`
 	Photos       []Photo       `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
 }
 
-// type TempShop struct {
-// 	TempID       uint          `gorm:"primaryKey" json:"id"`
-// 	ShopID       *uint         `json:"shop_id"`
-// 	Status       string        `json:"status"`
-// 	DeletePhoto  PhotoSlice    `json:"delete_photo"`
-// 	DeleteSocial []SocialMedia `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_social"`
-// 	DeleteMenu   []ShopMenu    `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_menu"`
-// }
+// UintSlice คือ custom type สำหรับเก็บ slice ของ uint ในฐานข้อมูล
+type UintSlice []uint
 
-type PhotoSlice []Photo
-
-func (p PhotoSlice) Value() (driver.Value, error) {
-	return json.Marshal(p)
+// Value แปลง UintSlice เป็น JSON string เมื่อบันทึกในฐานข้อมูล
+func (u UintSlice) Value() (driver.Value, error) {
+	return json.Marshal(u)
 }
 
-func (p *PhotoSlice) Scan(value interface{}) error {
+// Scan แปลง JSON string จากฐานข้อมูลกลับเป็น UintSlice
+func (u *UintSlice) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
-		return fmt.Errorf("failed to scan PhotoSlice: %v", value)
+		return fmt.Errorf("failed to scan UintSlice: %v", value)
 	}
-	return json.Unmarshal(b, &p)
+	return json.Unmarshal(b, u)
 }
+
+
