@@ -37,7 +37,10 @@ func main() {
 		&model.SocialMedia{},
 		&model.ShopMenu{},
 		&model.Workshop{},
-		&model.Photo{}); err != nil {
+		&model.Photo{},
+		&model.DeletePhoto{},
+		&model.DeleteSocial{},
+		&model.DeleteMenu{}); err != nil {
 		log.Fatalf("Failed to migrate: %v", err)
 	}
 

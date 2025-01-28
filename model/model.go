@@ -1,9 +1,6 @@
 package model
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -110,6 +107,7 @@ type SocialMedia struct {
 	ShopID   uint   `gorm:"not null" json:"shop_id"`
 	Shop     Shop   `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
 	TempID   *uint  `json:"temp_id"`
+	DeleteSocial  DeleteSocial   `gorm:"foreignKey:SocialID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"social_id"`
 }
 
 // ShopMenu represents the ShopMenu table
@@ -122,6 +120,8 @@ type ShopMenu struct {
 	Shop               Shop    `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
 	Photo              Photo   `gorm:"foreignKey:MenuID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photo"`
 	TempID             *uint   `json:"temp_id"`
+	DeleteMenu  DeleteMenu   `gorm:"foreignKey:MenuID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"dmenu_id"`
+
 }
 
 // Photo represents the Photo table
@@ -133,6 +133,7 @@ type Photo struct {
 	ShopID     *uint  `json:"shop_id"`
 	EventActID *uint  `json:"eventact_id"`
 	TempID     *uint  `json:"temp_id"`
+	DeletePhoto  DeletePhoto   `gorm:"foreignKey:PhotoID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photo_id"`	
 }
 
 // Workshop represents the Workshop table
@@ -171,29 +172,28 @@ type TempShop struct {
 	TempID       uint          `gorm:"primaryKey" json:"id"`
 	ShopID       *uint         `json:"shop_id"`
 	Status       string        `json:"status"`
-	DeletePhoto  UintSlice     `gorm:"type:json" json:"delete_photo"`  // เก็บเป็น JSON
-	DeleteSocial UintSlice     `gorm:"type:json" json:"delete_social"` // เก็บเป็น JSON
-	DeleteMenu   UintSlice     `gorm:"type:json" json:"delete_menu"`   // เก็บเป็น JSON
+	DeletePhoto  []DeletePhoto `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_photos"`
+	DeleteSocial []DeleteSocial `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_socials"`
+	DeleteMenu   []DeleteMenu  `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_menus"`
 	ShopMenus    []ShopMenu    `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_menus"`
 	SocialMedia  []SocialMedia `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"social_media"`
 	Photos       []Photo       `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
 }
 
-// UintSlice คือ custom type สำหรับเก็บ slice ของ uint ในฐานข้อมูล
-type UintSlice []uint
-
-// Value แปลง UintSlice เป็น JSON string เมื่อบันทึกในฐานข้อมูล
-func (u UintSlice) Value() (driver.Value, error) {
-	return json.Marshal(u)
+type DeletePhoto struct {
+	ID      uint  `gorm:"primaryKey" json:"id"`
+	TempID  uint  `json:"temp_id"`
+	PhotoID uint  `json:"photo_id"`
 }
 
-// Scan แปลง JSON string จากฐานข้อมูลกลับเป็น UintSlice
-func (u *UintSlice) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return fmt.Errorf("failed to scan UintSlice: %v", value)
-	}
-	return json.Unmarshal(b, u)
+type DeleteSocial struct {
+	ID       uint  `gorm:"primaryKey" json:"id"`
+	TempID   uint  `json:"temp_id"`
+	SocialID uint  `json:"social_id"`
 }
 
-
+type DeleteMenu struct {
+	ID     uint  `gorm:"primaryKey" json:"id"`
+	TempID uint  `json:"temp_id"`
+	MenuID uint  `json:"menu_id"`
+}
