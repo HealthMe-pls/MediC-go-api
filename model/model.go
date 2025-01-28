@@ -1,6 +1,9 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -47,19 +50,19 @@ type Entrepreneur struct {
 
 // Shop represents the Shop table
 type Shop struct {
-	ID               uint           `gorm:"primaryKey" json:"id"`
-	Name             string         `json:"name"`
-	ShopCategoryID   uint           `json:"shop_category_id"`
-	ShopCategory     ShopCategory   `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop_category"`
-	Status           bool           `json:"status"`
-	FullDescription  string         `json:"full_description"`
-	BriefDescription string         `json:"brief_description"`
-	EntrepreneurID   uint           `gorm:"not null" json:"entrepreneur_id"`
-	Entrepreneur     Entrepreneur   `gorm:"foreignKey:EntrepreneurID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"entrepreneur"`
-	ShopOpenDates    []ShopOpenDate `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_open_dates"`
-	ShopMenus        []ShopMenu     `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_menus"`
-	SocialMedia      []SocialMedia  `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"social_media"`
-	Photos           []Photo        `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
+	ID             uint           `gorm:"primaryKey" json:"id"`
+	Name           string         `json:"name"`
+	ShopCategoryID uint           `json:"shop_category_id"`
+	ShopCategory   ShopCategory   `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop_category"`
+	OpenStatus     bool           `json:"open_status"`
+	Description    string         `json:"description"`
+	EntrepreneurID uint           `gorm:"not null" json:"entrepreneur_id"`
+	Entrepreneur   Entrepreneur   `gorm:"foreignKey:EntrepreneurID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"entrepreneur"`
+	ShopOpenDates  []ShopOpenDate `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_open_dates"`
+	ShopMenus      []ShopMenu     `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_menus"`
+	SocialMedia    []SocialMedia  `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"social_media"`
+	Photos         []Photo        `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
+	Temp           TempShop       `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"Temp"`
 }
 
 // ShopCategory represents the ShopCategory table
@@ -91,20 +94,22 @@ type MarketOpenDate struct {
 
 // MarketMap represents the MarketMap table
 type MarketMap struct {
-	BlockID uint  `gorm:"primaryKey" json:"block_id"`
-	BlockName string  `json:"block_name"`
-	BlockZone string  `json:"block_zone"`
-	ShopID  *uint `json:"shop_id"`
-	Shop    Shop  `gorm:"foreignKey:ShopID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop"`
+	BlockID   uint   `gorm:"primaryKey" json:"block_id"`
+	BlockName string `json:"block_name"`
+	BlockZone string `json:"block_zone"`
+	ShopID    *uint  `json:"shop_id"`
+	Shop      Shop   `gorm:"foreignKey:ShopID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop"`
 }
 
 // SocialMedia represents the SocialMedia table
 type SocialMedia struct {
 	ID       uint   `gorm:"primaryKey" json:"id"`
+	Name     string `json:"name"`
 	Platform string `json:"platform"`
 	Link     string `json:"link"`
 	ShopID   uint   `gorm:"not null" json:"shop_id"`
 	Shop     Shop   `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
+	TempID   *uint  `json:"temp_id"`
 }
 
 // ShopMenu represents the ShopMenu table
@@ -116,16 +121,18 @@ type ShopMenu struct {
 	ShopID             uint    `gorm:"not null" json:"shop_id"`
 	Shop               Shop    `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
 	Photo              Photo   `gorm:"foreignKey:MenuID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photo"`
+	TempID             *uint   `json:"temp_id"`
 }
 
 // Photo represents the Photo table
 type Photo struct {
-	ID            uint   `gorm:"primaryKey" json:"id"`
-	PhotoCategory string `json:"photo_category"`
-	PathFile      string `json:"path_file"`
-	MenuID        *uint  `json:"menu_id"`
-	WorkshopID    *uint  `json:"workshop_id"` // Nullable foreign key
-	ShopID        *uint  `json:"shop_id"`
+	ID         uint   `gorm:"primaryKey" json:"id"`
+	PathFile   string `json:"path_file"`
+	MenuID     *uint  `json:"menu_id"`
+	WorkshopID *uint  `json:"workshop_id"` // Nullable foreign key
+	ShopID     *uint  `json:"shop_id"`
+	EventActID *uint  `json:"eventact_id"`
+	TempID     *uint  `json:"temp_id"`
 }
 
 // Workshop represents the Workshop table
@@ -148,4 +155,49 @@ type ContactToAdmin struct {
 	Problem      string `json:"problem"`
 	FromUsername string `json:"from_username"`
 	Detail       string `json:"detail"`
+}
+
+type EventAct struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	Name        string    `gorm:"unique;not null" json:"name"`
+	Description string    `json:"description"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	Date        time.Time `gorm:"type:date" json:"date"`
+	Photos      []Photo   `gorm:"foreignKey:EventActID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
+}
+
+type TempShop struct {
+	TempID       uint          `gorm:"primaryKey" json:"id"`
+	ShopID       *uint         `json:"shop_id"`
+	Status       string        `json:"status"`
+	DeletePhoto  []Photo       `constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_photo"`
+	DeleteSocial []SocialMedia `constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_social"`
+	DeleteMenu   []ShopMenu    `constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_menu"`
+	ShopMenus    []ShopMenu    `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_menus"`
+	SocialMedia  []SocialMedia `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"social_media"`
+	Photos       []Photo       `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
+}
+
+// type TempShop struct {
+// 	TempID       uint          `gorm:"primaryKey" json:"id"`
+// 	ShopID       *uint         `json:"shop_id"`
+// 	Status       string        `json:"status"`
+// 	DeletePhoto  PhotoSlice    `json:"delete_photo"`
+// 	DeleteSocial []SocialMedia `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_social"`
+// 	DeleteMenu   []ShopMenu    `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"delete_menu"`
+// }
+
+type PhotoSlice []Photo
+
+func (p PhotoSlice) Value() (driver.Value, error) {
+	return json.Marshal(p)
+}
+
+func (p *PhotoSlice) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to scan PhotoSlice: %v", value)
+	}
+	return json.Unmarshal(b, &p)
 }

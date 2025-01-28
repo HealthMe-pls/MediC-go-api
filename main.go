@@ -31,6 +31,7 @@ func main() {
 		&model.MarketOpenDate{},
 		&model.Entrepreneur{},
 		&model.Shop{},
+		&model.TempShop{},
 		&model.ShopOpenDate{},
 		&model.MarketMap{},
 		&model.SocialMedia{},
@@ -107,7 +108,7 @@ func main() {
 	app.Delete("/map/:block_id", func(c *fiber.Ctx) error { return controller.DeleteMarketMapsByBlockID(db, c) })
 	app.Put("/map/:block_id", func(c *fiber.Ctx) error { return controller.UpdateMarketMapByBlockID(db, c) })
 	app.Put("/Allmap", func(c *fiber.Ctx) error { return controller.UpdateAllMarketMaps(db, c) })
-	
+
 	//name
 	app.Get("/mapN/:block_name", func(c *fiber.Ctx) error { return controller.GetMapByBlockName(db, c) })
 	app.Delete("/mapN/:block_name", func(c *fiber.Ctx) error { return controller.DeleteMarketMapsByBlockName(db, c) })
@@ -123,9 +124,9 @@ func main() {
 	//shop
 	app.Post("/shop", func(c *fiber.Ctx) error { return controller.CreateShop(db, c) })
 	app.Get("/shop/:id", func(c *fiber.Ctx) error { return controller.GetShopByID(db, c) })
-	app.Get("/shopdetail", func(c *fiber.Ctx) error {return controller.GetShopDetail(db, c)})
-	app.Get("/shopdetail/:id", func(c *fiber.Ctx) error {return controller.GetShopDetailByID(db, c)})
-	
+	app.Get("/shopdetail", func(c *fiber.Ctx) error { return controller.GetShopDetail(db, c) })
+	app.Get("/shopdetail/:id", func(c *fiber.Ctx) error { return controller.GetShopDetailByID(db, c) })
+
 	app.Get("/shop", func(c *fiber.Ctx) error { return controller.GetShops(db, c) })
 	app.Put("/shop/:id", func(c *fiber.Ctx) error { return controller.UpdateShop(db, c) })
 	app.Delete("/shop/:id", func(c *fiber.Ctx) error { return controller.DeleteShop(db, c) })
