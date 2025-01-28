@@ -24,7 +24,7 @@ type Image struct {
 // Admin represents the Admin table
 type Admin struct {
 	ID         uint   `gorm:"primaryKey" json:"id"`
-	Username   string `gorm:"unique" json:"username"`
+	Email  string `gorm:"unique" json:"email"`
 	Password   string `json:"password"`
 	Title      string `json:"title"`
 	FirstName  string `json:"first_name"`
