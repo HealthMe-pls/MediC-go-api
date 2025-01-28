@@ -33,6 +33,7 @@ func main() {
 		&model.Shop{},
 		&model.TempShop{},
 		&model.ShopOpenDate{},
+		&model.TempShopOpenDate{},
 		&model.MarketMap{},
 		&model.SocialMedia{},
 		&model.ShopMenu{},
