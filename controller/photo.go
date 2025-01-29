@@ -4,6 +4,8 @@ import (
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
+	"fmt"
+	"strconv"
 )
 
 
@@ -92,4 +94,75 @@ func DeletePhoto(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+func CreatePhotoByShopID(db *gorm.DB, c *fiber.Ctx) error {
+	// Extract Shop ID from request params
+	shopID, err := strconv.ParseUint(c.Params("shop_id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid shop ID",
+		})
+	}
+
+	// Read file from request
+	file, err := c.FormFile("image")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Failed to read image",
+		})
+	}
+
+	// Save the file to the server
+	filePath := fmt.Sprintf("./uploads/%s", file.Filename)
+	if err := c.SaveFile(file, filePath); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to save image",
+		})
+	}
+
+	// Fetch TempID from TempShop where ShopID matches
+	var tempShop model.TempShop
+	if err := db.Where("shop_id = ?", shopID).First(&tempShop).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "TempShop not found for given ShopID",
+		})
+	}
+
+	// Create new photo record
+	photo := model.Photo{
+		PathFile: file.Filename,
+		ShopID:   uintPtr(uint(shopID)),
+		TempID:   &tempShop.TempID, // Get TempID from TempShop
+		IsPublic: false,            // Always false
+	}
+
+	// Save to database
+	if err := db.Create(&photo).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create photo",
+		})
+	}
+
+	// Return response
+	return c.Status(fiber.StatusCreated).JSON(photo)
+}
+
+// Helper function to convert uint to *uint
+func uintPtr(u uint) *uint {
+	return &u
 }

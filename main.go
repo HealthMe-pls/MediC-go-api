@@ -38,6 +38,7 @@ func main() {
 		&model.SocialMedia{},
 		&model.ShopMenu{},
 		&model.Workshop{},
+		&model.EventAct{},
 		&model.Photo{},
 		&model.DeletePhoto{},
 		&model.DeleteSocial{},
@@ -187,6 +188,16 @@ func main() {
 	//filter
 	//how to use search-shops?keyword=coffee
 	app.Get("/search-shops", func(c *fiber.Ctx) error { return controller.SearchShopsByKeyword(db, c) })
+
+	//temp
+	app.Post("/temp", func(c *fiber.Ctx) error { return controller.CreateTempShop(db, c) })
+	app.Get("/temp", func(c *fiber.Ctx) error { return controller.GetAllTempShops(db, c) })
+	app.Get("/temp/:id", func(c *fiber.Ctx) error { return controller.GetTempShopByID(db, c) })
+	app.Get("/temp/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetTempShopsByShopID(db, c) })
+	app.Put("/temp/:id", func(c *fiber.Ctx) error { return controller.UpdateTempShop(db, c) })
+	app.Delete("/temp/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShop(db, c) })
+	app.Put("/temp-shop/shop/:shop_id", func(c *fiber.Ctx) error { return controller.UpdateTempShopByShopID(db, c) })
+
 
 	app.Get("/config", getENV)
 
