@@ -213,7 +213,7 @@ type TempShopOpenDate struct {
 	ShopID           uint           `gorm:"not null" json:"shop_id"`
 	MarketOpenDateID uint           `gorm:"not null" json:"market_open_date_id"`
 	TempID           *uint          `gorm:"index;constraint:OnDelete:CASCADE;" json:"temp_id"`
-	TempShop         TempShop       `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_shop"`
+	TempShop         TempShop       `gorm:"foreignKey:TempID;references:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_shop"`
 	Shop             Shop           `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
 	MarketOpenDate   MarketOpenDate `gorm:"foreignKey:MarketOpenDateID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"market_open_date"`
 	Operation        string         `json:"operation"`
