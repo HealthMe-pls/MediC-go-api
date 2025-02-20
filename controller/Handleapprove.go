@@ -6,46 +6,44 @@ import (
 	"gorm.io/gorm"
 )
 
-// HandleApprove ใช้สำหรับ approve TempShop และเรียกใช้งานการ approve เวลา
-func HandleApprove(db *gorm.DB, c *fiber.Ctx) error {
+func Handleapprove(db *gorm.DB,c *fiber.Ctx) error {
 	id := c.Params("id")
 	var tempShop model.TempShop
 	if err := db.First(&tempShop, "id = ?", id).Error; err != nil {
-		// ถ้าไม่พบ TempShop ให้ส่ง StatusNotFound
-		return c.Status(fiber.StatusNotFound).SendString("TempShop not found")
-	}
+        // If an error occurs (e.g., no entrepreneur found), return a 404
+        return c.Status(fiber.StatusNotFound).SendString("TempShop not found")
+    }
 	tempID := tempShop.TempID
-
-	// ส่ง fiber context ไปพร้อมกับ tempID ให้ HandleTimeApprove
-	if err := HandleTimeApprove(db, c, tempID); err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Error handling time approve")
-	}
-
+	Handletimeapprove(db,tempID)
 	return c.JSON(tempShop)
 }
 
-// HandleTimeApprove ค้นหา TempShopOpenDate ทั้งหมดตาม tempID แล้วประมวลผลตาม Operation ที่ระบุ
-func HandleTimeApprove(db *gorm.DB, c *fiber.Ctx, tempID uint) error {
-	var tempShopOpenDates []model.TempShopOpenDate
-	if err := db.Where("temp_id = ?", tempID).Find(&tempShopOpenDates).Error; err != nil {
-		return err
+func Handletimeapprove(db *gorm.DB,tempID uint) error {
+	var tempShopOpenDate []model.TempShopOpenDate
+	if err := db.Where("temp_id = ?", tempID).Find(&tempShopOpenDate).Error; err != nil {
+		return nil
 	}
 
-	for _, openDate := range tempShopOpenDates {
-		if openDate.Operation == "add" {
-			// บันทึก openDate ลงใน Context เพื่อส่งต่อให้ CreateShopOpenDate ใช้
-			c.Locals("openDate", openDate)
-			if err := addToShopOpenDate(db, c); err != nil {
-				return err
-			}
+	for _, time := range tempShopOpenDate {
+		if time.Operation == "add" {
+			addToShopOpenDate(db,time)
+		}else if time.Operation == "delete" {
+			deleteToShopOpenDate(db,time)
+		}else if time.Operation == "edit" {
+			editToShopOpenDate(db,time)
 		}
 	}
 	return nil
 }
 
-// addToShopOpenDate เรียกใช้งาน CreateShopOpenDate โดยส่ง fiber context ไปด้วย
-func addToShopOpenDate(db *gorm.DB, c *fiber.Ctx) error {
-	return CreateShopOpenDate(db, c)
+func addToShopOpenDate(db *gorm.DB,time model.TempShopOpenDate) error {
+	
 }
 
+func deleteToShopOpenDate(db *gorm.DB,time model.TempShopOpenDate) error {
+	
+}
 
+func editToShopOpenDate(db *gorm.DB,time model.TempShopOpenDate) error {
+	
+}
