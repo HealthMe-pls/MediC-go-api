@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -36,14 +38,41 @@ func Handletimeapprove(db *gorm.DB,tempID uint) error {
 	return nil
 }
 
-func addToShopOpenDate(db *gorm.DB,time model.TempShopOpenDate) error {
-	
+func addToShopOpenDate(db *gorm.DB, time model.TempShopOpenDate) error {
+	shopOpenDate := model.ShopOpenDate{
+		StartTime:        time.StartTime,
+		EndTime:          time.EndTime,
+		ShopID:           time.ShopID,
+		MarketOpenDateID: time.MarketOpenDateID,
+	}
+
+	if err := db.Create(&shopOpenDate).Error; err != nil {
+		return fmt.Errorf("failed to create shop open date: %w", err)
+	}
+
+	return nil
 }
 
 func deleteToShopOpenDate(db *gorm.DB,time model.TempShopOpenDate) error {
-	
+		var record model.ShopOpenDate
+		if err := db.Where("shop_id = ? AND market_open_date_id = ?", time.ShopID, time.MarketOpenDateID).First(&record).Error; err != nil {
+			return err
+		}
+		if err := db.Delete(&record).Error; err != nil {
+			return err
+		}
+		return nil
 }
 
 func editToShopOpenDate(db *gorm.DB,time model.TempShopOpenDate) error {
-	
+	 var record model.ShopOpenDate
+	 if err := db.Where("shop_id = ? AND market_open_date_id = ?", time.ShopID, time.MarketOpenDateID).First(&record).Error; err != nil {
+		 return err
+	 }
+	 record.StartTime = time.StartTime
+	 record.EndTime = time.EndTime
+	 if err := db.Save(&record).Error; err != nil {
+		 return err
+	 }
+	 return nil
 }
