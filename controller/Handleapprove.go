@@ -11,7 +11,7 @@ import (
 func Handleapprove(db *gorm.DB,c *fiber.Ctx) error {
 	id := c.Params("id")
 	var tempShop model.TempShop
-	if err := db.First(&tempShop, "id = ?", id).Error; err != nil {
+	if err := db.First(&tempShop, "temp_id = ?", id).Error; err != nil {
         // If an error occurs (e.g., no entrepreneur found), return a 404
         return c.Status(fiber.StatusNotFound).SendString("TempShop not found")
     }
