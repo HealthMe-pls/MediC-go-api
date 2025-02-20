@@ -184,6 +184,20 @@ func main() {
 	app.Put("/contacts/:id", func(c *fiber.Ctx) error { return controller.UpdateContactToAdmin(db, c) })
 	app.Delete("/contacts/:id", func(c *fiber.Ctx) error { return controller.DeleteContactToAdmin(db, c) })
 
+	// TempShop routes
+	app.Post("/tempshops", func(c *fiber.Ctx) error { return controller.CreateTempShop(db, c) })
+	app.Get("/tempshops", func(c *fiber.Ctx) error { return controller.GetTempShops(db, c) })
+	app.Get("/tempshops/:id", func(c *fiber.Ctx) error { return controller.GetTempShopByID(db, c) })
+	app.Put("/tempshops/:id", func(c *fiber.Ctx) error { return controller.UpdateTempShop(db, c) })
+	app.Delete("/tempshops/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShop(db, c) })
+
+	// TempShopOpenDate routes
+	app.Post("/tempshopopendates", func(c *fiber.Ctx) error { return controller.CreateTempShopOpenDate(db, c) })
+	app.Get("/tempshopopendates", func(c *fiber.Ctx) error { return controller.GetTempShopOpenDates(db, c) })
+	app.Get("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.GetTempShopOpenDateByID(db, c) })
+	app.Put("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.UpdateTempShopOpenDate(db, c) })
+	app.Delete("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShopOpenDate(db, c) })
+
 	//filter
 	//how to use search-shops?keyword=coffee
 	app.Get("/search-shops", func(c *fiber.Ctx) error { return controller.SearchShopsByKeyword(db, c) })
