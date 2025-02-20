@@ -89,6 +89,7 @@ type MarketOpenDate struct {
 	StartTime     time.Time      `json:"start_time"`
 	EndTime       time.Time      `json:"end_time"`
 	ShopOpenDates []ShopOpenDate `gorm:"foreignKey:MarketOpenDateID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_open_dates"`
+	TempShopOpenDates []TempShopOpenDate `gorm:"foreignKey:MarketOpenDateID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_shop_open_date"`
 }
 
 // MarketMap represents the MarketMap table
@@ -186,6 +187,7 @@ type TempShop struct {
 	Photos         []Photo        `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
 	ShopCategoryID *uint          `json:"shop_category_id"`
 	ShopCategory   ShopCategory   `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop_category"`
+	TempShopOpenDates []TempShopOpenDate `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_shop_open_date"`
 }
 
 type DeletePhoto struct {
@@ -211,10 +213,7 @@ type TempShopOpenDate struct {
 	StartTime        time.Time      `json:"start_time"`
 	EndTime          time.Time      `json:"end_time"`
 	ShopID           uint           `gorm:"not null" json:"shop_id"`
+	TempID			uint           `gorm:"not null" json:"temp_id"`
 	MarketOpenDateID uint           `gorm:"not null" json:"market_open_date_id"`
-	TempID           *uint          `gorm:"index;constraint:OnDelete:CASCADE;" json:"temp_id"`
-	TempShop         TempShop       `gorm:"foreignKey:TempID;references:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_shop"`
-	Shop             Shop           `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
-	MarketOpenDate   MarketOpenDate `gorm:"foreignKey:MarketOpenDateID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"market_open_date"`
 	Operation        string         `json:"operation"`
 }
