@@ -17,6 +17,7 @@ func Handleapprove(db *gorm.DB,c *fiber.Ctx) error {
     }
 	tempID := tempShop.TempID
 	Handletimeapprove(db,tempID)
+	
 	return c.JSON(tempShop)
 }
 

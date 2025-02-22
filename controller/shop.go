@@ -235,7 +235,8 @@ func getShopMenus(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 			"product_name":        menu.ProductName,
 			"product_description": menu.ProductDescription,
 			"price":               menu.Price,
-			"photos":              menuPhotos, // Include all photos related to the menu
+			"photos":              menuPhotos,
+			"is_public":		menu.IsPublic, // Include all photos related to the menu
 		})
 	}
 	return result, nil
@@ -254,6 +255,7 @@ func getSocialMedia(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 			"id":       social.ID,
 			"platform": social.Platform,
 			"link":     social.Link,
+			"is_public": social.IsPublic,
 		})
 	}
 	return result, nil
@@ -270,6 +272,7 @@ func getPhotosByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 		result = append(result, fiber.Map{
 			"photo_id": photo.ID,
 			"pathfile": photo.PathFile,
+			"is_public": photo.IsPublic,
 		})
 	}
 	return result, nil
@@ -286,6 +289,7 @@ func getPhotosByMenuID(db *gorm.DB, menuID uint) ([]fiber.Map, error) {
 		result = append(result, fiber.Map{
 			"photo_id": photo.ID,
 			"pathfile": photo.PathFile,
+			"is_public": photo.IsPublic,
 		})
 	}
 	return result, nil
