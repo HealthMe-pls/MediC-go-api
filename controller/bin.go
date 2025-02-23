@@ -74,13 +74,41 @@ func DeleteBinMenu(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Deleted menu bin entry removed"})
 }
 
+// func DeleteBinMenuByTempID(db *gorm.DB, c *fiber.Ctx) error {
+// 	tempID := c.Params("temp_id")
+// 	if err := db.Where("temp_id = ?", tempID).Delete(&model.DeleteMenu{}).Error; err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete menus by TempID"})
+// 	}
+// 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all menus for TempID"})
+// }
 func DeleteBinMenuByTempID(db *gorm.DB, c *fiber.Ctx) error {
-	tempID := c.Params("temp_id")
-	if err := db.Where("temp_id = ?", tempID).Delete(&model.DeleteMenu{}).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete menus by TempID"})
+	tempID := c.Params("id")
+
+	// Fetch all the delete menu entries for the given temp_id
+	var deleteMenus []model.DeleteMenu
+	if err := db.Where("temp_id = ?", tempID).Find(&deleteMenus).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch delete menus"})
 	}
+
+	// Extract the menu IDs to delete from ShopMenu table
+	menuIDs := make([]uint, len(deleteMenus))
+	for i, menu := range deleteMenus {
+		menuIDs[i] = menu.MenuID
+	}
+
+	// Delete ShopMenu entries where IDs match the extracted menu IDs
+	if err := db.Where("id IN ?", menuIDs).Delete(&model.ShopMenu{}).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete shop menus"})
+	}
+
+	// // Delete the DeleteMenu entries
+	// if err := db.Where("temp_id = ?", tempID).Delete(&model.DeleteMenu{}).Error; err != nil {
+	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete menus by TempID"})
+	// }
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all menus for TempID"})
 }
+
 
 // ==================== PHOTO BIN ====================
 
@@ -143,13 +171,41 @@ func DeleteBinPhoto(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Deleted photo bin entry removed"})
 }
 
+// func DeleteBinPhotoByTempID(db *gorm.DB, c *fiber.Ctx) error {
+// 	tempID := c.Params("temp_id")
+// 	if err := db.Where("temp_id = ?", tempID).Delete(&model.DeletePhoto{}).Error; err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete photos by TempID"})
+// 	}
+// 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all photos for TempID"})
+// }
 func DeleteBinPhotoByTempID(db *gorm.DB, c *fiber.Ctx) error {
-	tempID := c.Params("temp_id")
-	if err := db.Where("temp_id = ?", tempID).Delete(&model.DeletePhoto{}).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete photos by TempID"})
+	tempID := c.Params("id")
+
+	// Fetch all the delete photo entries for the given temp_id
+	var deletePhotos []model.DeletePhoto
+	if err := db.Where("temp_id = ?", tempID).Find(&deletePhotos).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch delete photos"})
 	}
+
+	// Extract the photo IDs to delete from the Photos table
+	photoIDs := make([]uint, len(deletePhotos))
+	for i, photo := range deletePhotos {
+		photoIDs[i] = photo.PhotoID
+	}
+
+	// Delete Photo entries where IDs match the extracted photo IDs
+	if err := db.Where("id IN ?", photoIDs).Delete(&model.Photo{}).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete photos"})
+	}
+
+	// Delete the DeletePhoto entries
+	// if err := db.Where("temp_id = ?", tempID).Delete(&model.DeletePhoto{}).Error; err != nil {
+	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete photos by TempID"})
+	// }
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all photos for TempID"})
 }
+
 // ==================== SOCIAL BIN ====================
 
 func GetBinSocials(db *gorm.DB, c *fiber.Ctx) error {
@@ -211,10 +267,38 @@ func DeleteBinSocial(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Deleted social bin entry removed"})
 }
 
+// func DeleteBinSocialByTempID(db *gorm.DB, c *fiber.Ctx) error {
+// 	tempID := c.Params("temp_id")
+// 	if err := db.Where("temp_id = ?", tempID).Delete(&model.DeleteSocial{}).Error; err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete social data by TempID"})
+// 	}
+// 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all social data for TempID"})
+// }
+
 func DeleteBinSocialByTempID(db *gorm.DB, c *fiber.Ctx) error {
-	tempID := c.Params("temp_id")
-	if err := db.Where("temp_id = ?", tempID).Delete(&model.DeleteSocial{}).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete social data by TempID"})
+	tempID := c.Params("id")
+
+	// Fetch all the delete social entries for the given temp_id
+	var deleteSocials []model.DeleteSocial
+	if err := db.Where("temp_id = ?", tempID).Find(&deleteSocials).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch delete socials"})
 	}
+
+	// Extract the social media IDs to delete from SocialMedia table
+	socialIDs := make([]uint, len(deleteSocials))
+	for i, social := range deleteSocials {
+		socialIDs[i] = social.SocialID
+	}
+
+	// Delete SocialMedia entries where IDs match the extracted social IDs
+	if err := db.Where("id IN ?", socialIDs).Delete(&model.SocialMedia{}).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete social media entries"})
+	}
+
+	// Delete the DeleteSocial entries
+	// if err := db.Where("temp_id = ?", tempID).Delete(&model.DeleteSocial{}).Error; err != nil {
+	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete social data by TempID"})
+	// }
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all social data for TempID"})
 }

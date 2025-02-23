@@ -233,7 +233,8 @@ func main() {
 	
 
 	app.Get("/approve/:id", func(c *fiber.Ctx) error { return controller.Handleapprove(db, c) })
-
+	app.Put("/notApprove/:temp_id", func(c *fiber.Ctx) error { return controller.HandleNotApprove(db, c) })
+	
 	//filter
 	//how to use search-shops?keyword=coffee
 	app.Get("/search-shops", func(c *fiber.Ctx) error { return controller.SearchShopsByKeyword(db, c) })
