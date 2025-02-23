@@ -180,6 +180,15 @@ func main() {
 	app.Get("/photos/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetPhotoByShopID(db, c) })
 	app.Put("/photos/:id", func(c *fiber.Ctx) error { return controller.UpdatePhoto(db, c) })
 	app.Delete("/photos/:id", func(c *fiber.Ctx) error { return controller.DeletePhoto(db, c) })
+	// photo create by entrepreneur
+	app.Post("/photosmenu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c)})
+	app.Post("/photosshop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c)})
+	//photo create by admin
+	app.Post("/photos/workshop/:workshop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByWorkshopID(db, c)})
+	app.Post("/photos/menu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c)})
+	app.Post("/photos/shop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c)})
+	
+
 
 	//contact to admin
 	app.Post("/contacts/:entrepreneur_id", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })

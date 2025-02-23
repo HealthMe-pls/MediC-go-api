@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"strconv"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -139,4 +140,187 @@ func DeletePhoto(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// CreatePhotoByMenuID creates a Photo by MenuID with IsPublic set to false
+func CreatePhotoByMenuID(db *gorm.DB, c *fiber.Ctx) error {
+	// Parse menu_id from the URL params
+	menuID, err := strconv.Atoi(c.Params("menu_id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid menu ID",
+		})
+	}
+	unitMenuID := uint(menuID)
+	// Parse request body into the Photo struct
+	photo := new(model.Photo)
+	if err := c.BodyParser(photo); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Set IsPublic to false and assign MenuID
+	photo.IsPublic = false
+	photo.MenuID = &unitMenuID // Convert menuID to uint
+
+	// Create the Photo entry in the database
+	if err := db.Create(&photo).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create photo",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"photo": photo,
+	})
+}
+
+// CreatePhotoByShopID creates a Photo by ShopID with IsPublic set to false
+func CreatePhotoByShopID(db *gorm.DB, c *fiber.Ctx) error {
+	// Parse shop_id from the URL params
+	shopID, err := strconv.Atoi(c.Params("shop_id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid shop ID",
+		})
+	}
+	unitShopId := uint(shopID) 
+	// Parse request body into the Photo struct
+	photo := new(model.Photo)
+	if err := c.BodyParser(photo); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Set IsPublic to false and assign ShopID
+	photo.IsPublic = false
+	photo.ShopID = &unitShopId // Convert shopID to uint
+
+	// Create the Photo entry in the database
+	if err := db.Create(&photo).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create photo",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"photo": photo,
+	})
+}
+
+// CreatePhotoByWorkshopID creates a Photo by WorkshopID with IsPublic set to false
+func CreatePhotoByWorkshopID(db *gorm.DB, c *fiber.Ctx) error {
+	workshopID, err := strconv.Atoi(c.Params("workshop_id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid workshop ID",
+		})
+	}
+
+	// Convert workshopID from int to uint
+	uintWorkshopID := uint(workshopID)
+
+	// Parse request body into the Photo struct
+	photo := new(model.Photo)
+	if err := c.BodyParser(photo); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Set IsPublic to true
+	photo.IsPublic = true
+	photo.WorkshopID = &uintWorkshopID // Assign pointer to uint
+
+	// Create the Photo entry in the database
+	if err := db.Create(&photo).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create photo",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"photo": photo,
+	})
+}
+
+
+// CreatePhotoByMenuID creates a Photo by MenuID with IsPublic set to false
+func AdminCreatePhotoByMenuID(db *gorm.DB, c *fiber.Ctx) error {
+	// Parse menu_id from the URL params
+	menuID, err := strconv.Atoi(c.Params("menu_id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid menu ID",
+		})
+	}
+	unitMenuID := uint(menuID)
+	// Parse request body into the Photo struct
+	photo := new(model.Photo)
+	if err := c.BodyParser(photo); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Set IsPublic to false and assign MenuID
+	photo.IsPublic = true
+	photo.MenuID = &unitMenuID // Convert menuID to uint
+
+	// Create the Photo entry in the database
+	if err := db.Create(&photo).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create photo",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"photo": photo,
+	})
+}
+
+// CreatePhotoByShopID creates a Photo by ShopID with IsPublic set to false
+func AdminCreatePhotoByShopID(db *gorm.DB, c *fiber.Ctx) error {
+	// Parse shop_id from the URL params
+	shopID, err := strconv.Atoi(c.Params("shop_id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid shop ID",
+		})
+	}
+	unitShopId := uint(shopID) 
+	// Parse request body into the Photo struct
+	photo := new(model.Photo)
+	if err := c.BodyParser(photo); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Set IsPublic to false and assign ShopID
+	photo.IsPublic = true
+	photo.ShopID = &unitShopId // Convert shopID to uint
+
+	// Create the Photo entry in the database
+	if err := db.Create(&photo).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create photo",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"photo": photo,
+	})
 }
