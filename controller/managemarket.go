@@ -207,6 +207,7 @@ func CreateContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(contact)
 }
 
+
 func GetAllContacts(db *gorm.DB, c *fiber.Ctx) error {
 	var contacts []model.ContactToAdmin
 

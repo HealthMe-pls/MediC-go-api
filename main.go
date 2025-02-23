@@ -130,9 +130,11 @@ func main() {
 	app.Get("/shop/:id", func(c *fiber.Ctx) error { return controller.GetShopByID(db, c) })
 	app.Get("/shopdetail", func(c *fiber.Ctx) error { return controller.GetShopDetail(db, c) })
 	app.Get("/shopdetail/:id", func(c *fiber.Ctx) error { return controller.GetShopDetailByID(db, c) })
-
+	app.Get("/entrepreneur/shopdetail/:entrepreneur_id", func(c *fiber.Ctx) error {return controller.GetShopDetailsByEntrepreneurID(db, c)})
+	
 	app.Get("/shop", func(c *fiber.Ctx) error { return controller.GetShops(db, c) })
-	app.Put("/shop/:id", func(c *fiber.Ctx) error { return controller.UpdateShop(db, c) })
+	app.Put("/admin/shop/:id", func(c *fiber.Ctx) error { return controller.UpdateShopByAdmin(db, c) })
+	app.Put("/shop/:shop_id", func(c *fiber.Ctx) error { return controller.UpdateTempShopByShopID(db, c) })
 	app.Delete("/shop/:id", func(c *fiber.Ctx) error { return controller.DeleteShop(db, c) })
 	app.Get("/shops/category/:shop_category_id", func(c *fiber.Ctx) error { return controller.GetShopsByCategory(db, c) })
 
@@ -150,7 +152,7 @@ func main() {
 	app.Delete("/marketDate/:id", func(c *fiber.Ctx) error { return controller.DeleteMarketOpenDate(db, c) })
 
 	//social media
-	app.Post("/social", func(c *fiber.Ctx) error { return controller.CreateSocialMedia(db, c) })
+	app.Post("/social", func(c *fiber.Ctx) error { return controller.CreateSocialMediaByAdmin(db, c) })
 	app.Get("/social/:id", func(c *fiber.Ctx) error { return controller.GetSocialMedia(db, c) })
 	app.Get("/social/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetSocialMediaByShopID(db, c) })
 	app.Put("/social/:id", func(c *fiber.Ctx) error { return controller.UpdateSocialMedia(db, c) })
@@ -164,7 +166,7 @@ func main() {
 	app.Delete("/shoptime/:id", func(c *fiber.Ctx) error { return controller.DeleteShopOpenDate(db, c) })
 
 	//shop menu
-	app.Post("/shopmenu", func(c *fiber.Ctx) error { return controller.CreateShopMenu(db, c) })
+	app.Post("/shopmenu", func(c *fiber.Ctx) error { return controller.CreateShopMenuByAdmin(db, c) })
 	app.Get("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.GetShopMenu(db, c) })
 	app.Get("/shopmenu/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetShopMenuByShopID(db, c) })
 	app.Put("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.UpdateShopMenu(db, c) })
@@ -179,7 +181,7 @@ func main() {
 	app.Delete("/photos/:id", func(c *fiber.Ctx) error { return controller.DeletePhoto(db, c) })
 
 	//contact to admin
-	app.Post("/contacttoadmin/:entrepreneur_id", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
+	app.Post("/contacts/:entrepreneur_id", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
 	app.Get("/contacts", func(c *fiber.Ctx) error { return controller.GetAllContacts(db, c) })
 	// app.Post("/contacts", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
 	app.Get("/contacts/:id", func(c *fiber.Ctx) error { return controller.GetContactToAdmin(db, c) })

@@ -198,6 +198,91 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(shopResponse)
 }
+func GetShopDetailsByEntrepreneurID(db *gorm.DB, c *fiber.Ctx) error {
+	// Parse Entrepreneur ID from request parameters
+	entrepreneurID, err := strconv.ParseUint(c.Params("entrepreneur_id"), 10, 64)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid entrepreneur ID",
+		})
+	}
+
+	// Fetch all shops belonging to the entrepreneur
+	var shops []model.Shop
+	if err := db.Preload("Entrepreneur").
+		Preload("ShopCategory").
+		Where("entrepreneur_id = ?", entrepreneurID).
+		Find(&shops).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve shops",
+			"details": err.Error(),
+		})
+	}
+
+	// If no shops found, return an empty array
+	if len(shops) == 0 {
+		return c.JSON([]fiber.Map{})
+	}
+
+	// Prepare response array
+	var shopResponses []fiber.Map
+
+	// Iterate over each shop to fetch related data
+	for _, shop := range shops {
+		shopOpenDates, err := getShopOpenDates(db, shop.ID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve shop open dates",
+				"details": err.Error(),
+			})
+		}
+
+		shopMenus, err := getShopMenus(db, shop.ID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve shop menus",
+				"details": err.Error(),
+			})
+		}
+
+		socialMedias, err := getSocialMedia(db, shop.ID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve social media",
+				"details": err.Error(),
+			})
+		}
+
+		shopPhotos, err := getPhotosByShopID(db, shop.ID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve shop photos",
+				"details": err.Error(),
+			})
+		}
+
+		// Construct individual shop response
+		shopResponse := fiber.Map{
+			"shop_id":         shop.ID,
+			"name":            shop.Name,
+			"entrepreneur_id": shop.Entrepreneur.ID,
+			"entrepreneur":    shop.Entrepreneur.Title + " " + shop.Entrepreneur.FirstName + " " + shop.Entrepreneur.MiddleName + " " + shop.Entrepreneur.LastName,
+			"category_id":     shop.ShopCategory.ID,
+			"category":        shop.ShopCategory.Name,
+			"open_status":     shop.OpenStatus,
+			"description":     shop.Description,
+			"photos":          shopPhotos,
+			"shop_open_dates": shopOpenDates,
+			"menus":           shopMenus,
+			"social_media":    socialMedias,
+		}
+
+		// Append to response array
+		shopResponses = append(shopResponses, shopResponse)
+	}
+
+	return c.JSON(shopResponses)
+}
 
 func getShopOpenDates(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 	var shopOpenDates []model.ShopOpenDate
@@ -324,7 +409,7 @@ func CreateShop(db *gorm.DB, c *fiber.Ctx) error {
 	// Return the created Shop as a JSON response
 	return c.Status(fiber.StatusCreated).JSON(shop)
 }
-func UpdateShop(db *gorm.DB, c *fiber.Ctx) error {
+func UpdateShopByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	// Get the shop ID parameter from the URL
 	id := c.Params("id")
 	var shop model.Shop
@@ -351,6 +436,38 @@ func UpdateShop(db *gorm.DB, c *fiber.Ctx) error {
 	// Return the updated shop as a JSON response
 	return c.JSON(shop)
 }
+// UpdateTempShopByShopID updates an existing TempShop by ShopID
+func UpdateTempShopByShopID(db *gorm.DB, c *fiber.Ctx) error {
+	shopID := c.Params("shop_id")
+
+	// Find TempShop by ShopID
+	var tempShop model.TempShop
+	if err := db.First(&tempShop, "shop_id = ?", shopID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Temp shop not found",
+			"details": err.Error(),
+		})
+	}
+
+	// Parse request body
+	if err := c.BodyParser(&tempShop); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Save updated TempShop
+	if result := db.Save(&tempShop); result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to update temp shop",
+			"details": result.Error.Error(),
+		})
+	}
+
+	return c.JSON(tempShop)
+}
+
 func DeleteShop(db *gorm.DB, c *fiber.Ctx) error {
 	// Get the shop ID parameter from the URL
 	id := c.Params("id")
@@ -381,7 +498,7 @@ func GetShopsByCategory(db *gorm.DB, c *fiber.Ctx) error {
 
 // -----social media
 // CreateSocialMedia creates a new SocialMedia entry
-func CreateSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
+func CreateSocialMediaByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	var socialMedia model.SocialMedia
 	if err := c.BodyParser(&socialMedia); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -394,6 +511,51 @@ func CreateSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 	return c.Status(fiber.StatusCreated).JSON(socialMedia)
+}
+func CreateSocialByEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
+	entrepreneurID := c.Params("entrepreneur_id")
+	shopID := c.Params("shop_id")
+
+	// Check if the entrepreneur exists
+	var entrepreneur model.Entrepreneur
+	if err := db.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Entrepreneur not found",
+			"details": err.Error(),
+		})
+	}
+
+	// Check if the shop exists and belongs to the entrepreneur
+	var shop model.Shop
+	if err := db.First(&shop, "id = ? AND entrepreneur_id = ?", shopID, entrepreneurID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Shop not found or does not belong to the entrepreneur",
+			"details": err.Error(),
+		})
+	}
+
+	// Parse request body
+	var social model.SocialMedia
+	if err := c.BodyParser(&social); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Ensure IsPublic is set to false and assign Shop ID
+	social.IsPublic = false
+	social.ShopID = shop.ID
+
+	// Save the social media
+	if err := db.Create(&social).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create social media",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(social)
 }
 
 // GetSocialMedia retrieves a SocialMedia entry by ID
@@ -464,7 +626,7 @@ func DeleteSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
 
 // shop menu
 // CreateShopMenu creates a new ShopMenu entry
-func CreateShopMenu(db *gorm.DB, c *fiber.Ctx) error {
+func CreateShopMenuByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	var shopMenu model.ShopMenu
 	if err := c.BodyParser(&shopMenu); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -477,6 +639,51 @@ func CreateShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 	return c.Status(fiber.StatusCreated).JSON(shopMenu)
+}
+func CreateMenuByEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
+	entrepreneurID := c.Params("entrepreneur_id")
+	shopID := c.Params("shop_id")
+
+	// Check if the entrepreneur exists
+	var entrepreneur model.Entrepreneur
+	if err := db.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Entrepreneur not found",
+			"details": err.Error(),
+		})
+	}
+
+	// Check if the shop exists and belongs to the entrepreneur
+	var shop model.Shop
+	if err := db.First(&shop, "id = ? AND entrepreneur_id = ?", shopID, entrepreneurID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Shop not found or does not belong to the entrepreneur",
+			"details": err.Error(),
+		})
+	}
+
+	// Parse request body
+	var menu model.ShopMenu
+	if err := c.BodyParser(&menu); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Ensure IsPublic is set to false and assign Shop ID
+	menu.IsPublic = false
+	menu.ShopID = shop.ID
+
+	// Save the shop menu
+	if err := db.Create(&menu).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create shop menu",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(menu)
 }
 
 // GetShopMenu retrieves a ShopMenu entry by ID

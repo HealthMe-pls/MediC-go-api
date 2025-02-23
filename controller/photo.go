@@ -47,6 +47,53 @@ func GetPhotoByMenuID(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(photos)
 }
 
+func CreatePhotoByEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
+	entrepreneurID := c.Params("entrepreneur_id")
+	shopID := c.Params("shop_id")
+
+	// Check if the entrepreneur exists
+	var entrepreneur model.Entrepreneur
+	if err := db.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Entrepreneur not found",
+			"details": err.Error(),
+		})
+	}
+
+	// Check if the shop exists and belongs to the entrepreneur
+	var shop model.Shop
+	if err := db.First(&shop, "id = ? AND entrepreneur_id = ?", shopID, entrepreneurID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Shop not found or does not belong to the entrepreneur",
+			"details": err.Error(),
+		})
+	}
+
+	// Parse request body
+	var photo model.Photo
+	if err := c.BodyParser(&photo); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Ensure IsPublic is set to false and assign Shop ID
+	photo.IsPublic = false
+	photo.ShopID = &shop.ID
+
+	// Save the photo
+	if err := db.Create(&photo).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create photo",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(photo)
+}
+
+
 // GetPhotoByShopID retrieves Photo entries by Shop ID
 func GetPhotoByShopID(db *gorm.DB, c *fiber.Ctx) error {
 	shopID := c.Params("shop_id")

@@ -135,3 +135,5 @@ func DeleteEntrepreneurAndShops(db *gorm.DB, c *fiber.Ctx) error {
     return c.SendString("Entrepreneur and associated shops successfully deleted")
 }
 
+
+
