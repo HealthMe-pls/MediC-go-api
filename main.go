@@ -103,7 +103,7 @@ func main() {
 	app.Post("/entrepreneur", func(c *fiber.Ctx) error { return controller.CreateEntrepreneur(db, c) })
 	app.Put("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.UpdateEntrepreneur(db, c) })
 	//Not available
-	app.Delete("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.DeleteEntrepreneurAndShops(db, c) })
+	app.Delete("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.DeleteEntrepreneurByID(db, c) })
 
 	//map --check
 	app.Get("/map", func(c *fiber.Ctx) error { return controller.GetMarketMap(db, c) })
