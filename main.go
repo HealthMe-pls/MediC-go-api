@@ -185,8 +185,8 @@ func main() {
 	app.Post("/photosshop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c)})
 	//photo create by admin
 	app.Post("/photos/workshop/:workshop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByWorkshopID(db, c)})
-	app.Post("/photos/menu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c)})
-	app.Post("/photos/shop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c)})
+	app.Post("/photos/menu/:menu_id", func(c *fiber.Ctx) error {return controller.AdminCreatePhotoByMenuID(db, c)})
+	app.Post("/photos/shop/:shop_id", func(c *fiber.Ctx) error {return controller.AdminCreatePhotoByShopID(db, c)})
 	
 
 
@@ -213,9 +213,12 @@ func main() {
 	app.Delete("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShopOpenDate(db, c) })
 
 	//create with temp
-	app.Post("/createshop", func(c *fiber.Ctx) error {return controller.CreateShopWithTemp(db, c)})
 	app.Post("/createmenu", func(c *fiber.Ctx) error {return controller.CreateMenuWithTemp(db, c)})
 	app.Post("/createsocial", func(c *fiber.Ctx) error {return controller.CreateSocialWithTemp(db, c)})
+	//admin
+	app.Post("/createshop", func(c *fiber.Ctx) error {return controller.CreateShopWithTemp(db, c)})
+	app.Post("/create/menu", func(c *fiber.Ctx) error {return controller.AdminCreateMenuWithTemp(db, c)})
+	app.Post("/create/social", func(c *fiber.Ctx) error {return controller.AdminCreateSocialWithTemp(db, c)})
 	
 	//menuupdate
 	app.Put("/updatemenu/:menu_id", func(c *fiber.Ctx) error {return controller.UpdateTempMenuByMenuID(db, c)})
