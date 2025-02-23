@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"strconv"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -153,19 +154,70 @@ func DeleteShopOpenDate(db *gorm.DB, c *fiber.Ctx) error {
 
 //contrat to admin
 // CreateContactToAdmin creates a new ContactToAdmin entry
+// func CreateContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
+// 	var contactToAdmin model.ContactToAdmin
+// 	if err := c.BodyParser(&contactToAdmin); err != nil {
+// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+// 			"error": "Invalid request payload",
+// 		})
+// 	}
+// 	if err := db.Create(&contactToAdmin).Error; err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"error": "Failed to create contact",
+// 		})
+// 	}
+// 	return c.Status(fiber.StatusCreated).JSON(contactToAdmin)
+// }
+
 func CreateContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
-	var contactToAdmin model.ContactToAdmin
-	if err := c.BodyParser(&contactToAdmin); err != nil {
+	// Parse Entrepreneur ID from request parameters
+	entrepreneurID, err := strconv.ParseUint(c.Params("entrepreneur_id"), 10, 64)
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request payload",
+			"error": "Invalid entrepreneur ID",
 		})
 	}
-	if err := db.Create(&contactToAdmin).Error; err != nil {
+
+	// Fetch the entrepreneur's details to get the username
+	var entrepreneur model.Entrepreneur
+	if err := db.First(&entrepreneur, entrepreneurID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Entrepreneur not found",
+		})
+	}
+
+	// Parse request body
+	var contact model.ContactToAdmin
+	if err := c.BodyParser(&contact); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// Set FromUsername from the entrepreneur's username
+	contact.FromUsername = entrepreneur.Username
+
+	// Save to database
+	if err := db.Create(&contact).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create contact",
+			"error": "Failed to create contact request",
 		})
 	}
-	return c.Status(fiber.StatusCreated).JSON(contactToAdmin)
+
+	return c.JSON(contact)
+}
+
+func GetAllContacts(db *gorm.DB, c *fiber.Ctx) error {
+	var contacts []model.ContactToAdmin
+
+	// Fetch all contact requests from the database
+	if err := db.Find(&contacts).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve contacts",
+		})
+	}
+
+	return c.JSON(contacts)
 }
 
 // GetContactToAdmin retrieves a ContactToAdmin entry by ID

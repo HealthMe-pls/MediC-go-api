@@ -179,7 +179,9 @@ func main() {
 	app.Delete("/photos/:id", func(c *fiber.Ctx) error { return controller.DeletePhoto(db, c) })
 
 	//contact to admin
-	app.Post("/contacts", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
+	app.Post("/contacttoadmin/:entrepreneur_id", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
+	app.Get("/contacts", func(c *fiber.Ctx) error { return controller.GetAllContacts(db, c) })
+	// app.Post("/contacts", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
 	app.Get("/contacts/:id", func(c *fiber.Ctx) error { return controller.GetContactToAdmin(db, c) })
 	app.Put("/contacts/:id", func(c *fiber.Ctx) error { return controller.UpdateContactToAdmin(db, c) })
 	app.Delete("/contacts/:id", func(c *fiber.Ctx) error { return controller.DeleteContactToAdmin(db, c) })
