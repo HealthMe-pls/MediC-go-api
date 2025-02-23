@@ -95,7 +95,6 @@ func GetShopDetail(db *gorm.DB, c *fiber.Ctx) error {
 			"shop_id":         shop.ID,
 			"name":            shop.Name,
 			"entrepreneur_id": shop.Entrepreneur.ID,
-			"entrepreneur":    shop.Entrepreneur.Title + " " + shop.Entrepreneur.FirstName + " " + shop.Entrepreneur.MiddleName + " " + shop.Entrepreneur.LastName,
 			"category_id":     shop.ShopCategory.ID,
 			"category":        shop.ShopCategory.Name,
 			"open_status":     shop.OpenStatus,
@@ -185,7 +184,6 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 		"shop_id":         shop.ID,
 		"name":            shop.Name,
 		"entrepreneur_id": shop.Entrepreneur.ID,
-		"entrepreneur":    shop.Entrepreneur.Title + " " + shop.Entrepreneur.FirstName + " " + shop.Entrepreneur.MiddleName + " " + shop.Entrepreneur.LastName,
 		"category_id":     shop.ShopCategory.ID,
 		"category":        shop.ShopCategory.Name,
 		"open_status":     shop.OpenStatus,
@@ -266,7 +264,6 @@ func GetShopDetailsByEntrepreneurID(db *gorm.DB, c *fiber.Ctx) error {
 			"shop_id":         shop.ID,
 			"name":            shop.Name,
 			"entrepreneur_id": shop.Entrepreneur.ID,
-			"entrepreneur":    shop.Entrepreneur.Title + " " + shop.Entrepreneur.FirstName + " " + shop.Entrepreneur.MiddleName + " " + shop.Entrepreneur.LastName,
 			"category_id":     shop.ShopCategory.ID,
 			"category":        shop.ShopCategory.Name,
 			"open_status":     shop.OpenStatus,
@@ -321,7 +318,7 @@ func getShopMenus(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 			"product_description": menu.ProductDescription,
 			"price":               menu.Price,
 			"photos":              menuPhotos,
-			"is_public":		menu.IsPublic, // Include all photos related to the menu
+			"is_public":           menu.IsPublic, // Include all photos related to the menu
 		})
 	}
 	return result, nil
@@ -337,9 +334,9 @@ func getSocialMedia(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 	var result []fiber.Map
 	for _, social := range socialMedias {
 		result = append(result, fiber.Map{
-			"id":       social.ID,
-			"platform": social.Platform,
-			"link":     social.Link,
+			"id":        social.ID,
+			"platform":  social.Platform,
+			"link":      social.Link,
 			"is_public": social.IsPublic,
 		})
 	}
@@ -355,8 +352,8 @@ func getPhotosByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 	var result []fiber.Map
 	for _, photo := range photos {
 		result = append(result, fiber.Map{
-			"photo_id": photo.ID,
-			"pathfile": photo.PathFile,
+			"photo_id":  photo.ID,
+			"pathfile":  photo.PathFile,
 			"is_public": photo.IsPublic,
 		})
 	}
@@ -372,8 +369,8 @@ func getPhotosByMenuID(db *gorm.DB, menuID uint) ([]fiber.Map, error) {
 	var result []fiber.Map
 	for _, photo := range photos {
 		result = append(result, fiber.Map{
-			"photo_id": photo.ID,
-			"pathfile": photo.PathFile,
+			"photo_id":  photo.ID,
+			"pathfile":  photo.PathFile,
 			"is_public": photo.IsPublic,
 		})
 	}
@@ -436,6 +433,7 @@ func UpdateShopByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	// Return the updated shop as a JSON response
 	return c.JSON(shop)
 }
+
 // UpdateTempShopByShopID updates an existing TempShop by ShopID
 func UpdateTempShopByShopID(db *gorm.DB, c *fiber.Ctx) error {
 	shopID := c.Params("shop_id")

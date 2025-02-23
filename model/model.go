@@ -34,15 +34,10 @@ type Admin struct {
 
 // Entrepreneur represents the Entrepreneur table
 type Entrepreneur struct {
-	ID          uint   `gorm:"primaryKey" json:"id"`
-	Username    string `gorm:"unique;not null;size:255" json:"username"`
-	Password    string `json:"password"`
-	PhoneNumber string `json:"phone_number"`
-	Title       string `json:"title"`
-	FirstName   string `json:"first_name"`
-	MiddleName  string `json:"middle_name"`
-	LastName    string `json:"last_name"`
-	Shops       []Shop `gorm:"foreignKey:EntrepreneurID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shops"`
+	ID       uint   `gorm:"primaryKey" json:"id"`
+	Username string `gorm:"unique;not null;size:255" json:"username"`
+	Password string `json:"password"`
+	Shops    []Shop `gorm:"foreignKey:EntrepreneurID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shops"`
 }
 
 // Shop represents the Shop table
@@ -89,7 +84,6 @@ type MarketOpenDate struct {
 	StartTime     time.Time      `json:"start_time"`
 	EndTime       time.Time      `json:"end_time"`
 	ShopOpenDates []ShopOpenDate `gorm:"foreignKey:MarketOpenDateID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop_open_dates"`
-	TempShopOpenDates []TempShopOpenDate `gorm:"foreignKey:MarketOpenDateID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_shop_open_date"`
 }
 
 // MarketMap represents the MarketMap table
@@ -161,7 +155,6 @@ type ContactToAdmin struct {
 	Problem      string `json:"problem"`
 	FromUsername string `json:"from_username"`
 	Detail       string `json:"detail"`
-	ContactToEntrepreneur	 string `json:"contact_to_en"`
 }
 
 type EventAct struct {
@@ -188,7 +181,8 @@ type TempShop struct {
 	Photos         []Photo        `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"photos"`
 	ShopCategoryID *uint          `json:"shop_category_id"`
 	ShopCategory   ShopCategory   `gorm:"foreignKey:ShopCategoryID;constraint:OnDelete:SET NULL;OnUpdate:CASCADE;" json:"shop_category"`
-	TempShopOpenDates []TempShopOpenDate `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_shop_open_date"`
+	TempSocial     *TempSocial    `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_social"`
+	TempMenu       *TempMenu      `gorm:"foreignKey:TempID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"temp_menu"`
 }
 
 type DeletePhoto struct {
@@ -214,7 +208,26 @@ type TempShopOpenDate struct {
 	StartTime        time.Time      `json:"start_time"`
 	EndTime          time.Time      `json:"end_time"`
 	ShopID           uint           `gorm:"not null" json:"shop_id"`
-	TempID			uint           `gorm:"not null" json:"temp_id"`
 	MarketOpenDateID uint           `gorm:"not null" json:"market_open_date_id"`
+	Shop             Shop           `gorm:"foreignKey:ShopID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"shop"`
+	MarketOpenDate   MarketOpenDate `gorm:"foreignKey:MarketOpenDateID;constraint:OnDelete:CASCADE;OnUpdate:CASCADE;" json:"market_open_date"`
 	Operation        string         `json:"operation"`
+}
+
+type TempMenu struct {
+	ID                 uint    `gorm:"primaryKey" json:"id"`
+	TempID             uint    `json:"temp_id"`
+	MenuID             uint    `json:"menu_id"`
+	ProductDescription string  `json:"product_description"`
+	Price              float64 `json:"price"`
+	ProductName        string  `json:"product_name"`
+}
+
+type TempSocial struct {
+	ID       uint   `gorm:"primaryKey" json:"id"`
+	TempID   uint   `json:"temp_id"`
+	SocialID uint   `json:"social_id"`
+	Name     string `json:"name"`
+	Platform string `json:"platform"`
+	Link     string `json:"link"`
 }

@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"strconv"
 	"fmt"
+	"strconv"
+
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
-
 
 func GetAvailableMenus(db *gorm.DB, c *fiber.Ctx) error {
 	var availableMenus []model.ShopMenu
@@ -134,8 +134,7 @@ func GetAvailableSocialByShopID(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(socialMedias)
 }
 
-
-//shop
+// shop
 func GetAvailableShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 	shopID := c.Params("shop_id") // shop_id is still a string
 	fmt.Println("shopID from URL parameter:", shopID)
@@ -195,14 +194,13 @@ func GetAvailableShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 		"shop_id":         shop.ID,
 		"name":            shop.Name,
 		"entrepreneur_id": shop.Entrepreneur.ID,
-		"entrepreneur":    shop.Entrepreneur.Title + " " + shop.Entrepreneur.FirstName + " " + shop.Entrepreneur.MiddleName + " " + shop.Entrepreneur.LastName,
 		"category_id":     shop.ShopCategory.ID,
 		"category":        shop.ShopCategory.Name,
 		"open_status":     shop.OpenStatus,
 		"description":     shop.Description,
-		"photos":          availablePhotos,  // Include only available photos
+		"photos":          availablePhotos, // Include only available photos
 		"shop_open_dates": shopOpenDates,
-		"menus":           availableMenus,   // Include only public menus
+		"menus":           availableMenus,       // Include only public menus
 		"social_media":    availableSocialMedia, // Include only public social media
 	}
 
