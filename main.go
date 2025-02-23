@@ -102,7 +102,6 @@ func main() {
 	app.Get("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.GetEntrepreneurByID(db, c) })
 	app.Post("/entrepreneur", func(c *fiber.Ctx) error { return controller.CreateEntrepreneur(db, c) })
 	app.Put("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.UpdateEntrepreneur(db, c) })
-	//Not available
 	app.Delete("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.DeleteEntrepreneurByID(db, c) })
 
 	//map --check
@@ -204,6 +203,14 @@ func main() {
 	app.Put("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.UpdateTempShopOpenDate(db, c) })
 	app.Delete("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShopOpenDate(db, c) })
 
+	//create with temp
+	app.Post("/createshop", func(c *fiber.Ctx) error {return controller.CreateShopWithTemp(db, c)})
+	app.Post("/createmenu", func(c *fiber.Ctx) error {return controller.CreateMenuWithTemp(db, c)})
+	app.Post("/createsocial", func(c *fiber.Ctx) error {return controller.CreateSocialWithTemp(db, c)})
+	
+	//menuupdate
+	app.Put("/updatemenu/:menu_id", func(c *fiber.Ctx) error {return controller.UpdateTempMenuByMenuID(db, c)})
+	
 	//Bin
 	// Bin routes
 	app.Post("/menubin", func(c *fiber.Ctx) error { return controller.CreateBinMenu(db, c) })

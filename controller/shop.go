@@ -406,6 +406,65 @@ func CreateShop(db *gorm.DB, c *fiber.Ctx) error {
 	// Return the created Shop as a JSON response
 	return c.Status(fiber.StatusCreated).JSON(shop)
 }
+func CreateShopWithTemp(db *gorm.DB, c *fiber.Ctx) error {
+	// Parse request body into the Shop struct
+	shop := new(model.Shop)
+	if err := c.BodyParser(shop); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Failed to parse request body",
+			"details": err.Error(),
+		})
+	}
+
+	// Check if the ShopCategory exists by its ID
+	var shopCategory model.ShopCategory
+	if err := db.First(&shopCategory, shop.ShopCategoryID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "ShopCategory not found",
+			"details": err.Error(),
+		})
+	}
+
+	// Create the Shop in the database
+	if result := db.Create(&shop); result.Error != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create shop",
+		})
+	}
+
+	// Create a corresponding TempShop entry
+	tempShop := model.TempShop{
+		Name:           shop.Name,
+		ShopID:         &shop.ID, // Link TempShop to the newly created Shop
+		Status:         "Approve",
+		Description:    shop.Description,
+		ShopCategoryID: &shop.ShopCategoryID,
+	}
+
+	// Save the TempShop entry
+	if err := db.Create(&tempShop).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to create temp shop",
+			"details": err.Error(),
+		})
+	}
+
+	// Update is_public to false for all ShopMenu items linked to this shop
+	if err := db.Model(&model.ShopMenu{}).Where("shop_id = ?", shop.ID).Update("is_public", false).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to update shop menus",
+			"details": err.Error(),
+		})
+	}
+
+	// Return the created Shop and TempShop details
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"shop":     shop,
+		"tempShop": tempShop,
+	})
+}
+
+
 func UpdateShopByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	// Get the shop ID parameter from the URL
 	id := c.Params("id")

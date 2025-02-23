@@ -2,7 +2,7 @@ package controller
 
 import (
 	"fmt"
-
+	"strings"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -28,6 +28,20 @@ func Handleapprove(db *gorm.DB,c *fiber.Ctx) error {
 	if err := UpdateShopFromTemp(db, tempID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Failed to update Shop from TempShop",
+			"details": err.Error(),
+		})
+	}
+	if err := UpdateMenuFromTemp(db, tempID); err != nil && !isNotFoundError(err) {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to update Menu from TempShop",
+			"details": err.Error(),
+		})
+	}
+	
+	// Update Social details from TempSocial, ignore if TempSocial not found
+	if err := UpdateSocialFromTemp(db, tempID); err != nil && !isNotFoundError(err) {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to update Social from TempShop",
 			"details": err.Error(),
 		})
 	}
@@ -63,6 +77,9 @@ func Handleapprove(db *gorm.DB,c *fiber.Ctx) error {
 		"tempShop": tempShop,
 		"error":    nil,
 	})
+}
+func isNotFoundError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "record not found")
 }
 func HandleNotApprove(db *gorm.DB, c *fiber.Ctx) error {
 	// Extract the temp ID from the request

@@ -34,7 +34,7 @@ func UpdateShopFromTemp(db *gorm.DB, tempID uint) error {
 
 	// Save the updated Shop record
 	if err := db.Save(&shop).Error; err != nil {
-		return fmt.Errorf("Failed to update Shop: %w", err)
+		return fmt.Errorf("failed to update Shop: %w", err)
 	}
 
 	return nil
@@ -85,4 +85,22 @@ func UpdateStatusToPublicByTempID(db *gorm.DB, tempID uint) error {
 	}
 
 	return nil
+}
+
+func GetTempIDByShopID(db *gorm.DB, c *fiber.Ctx) error {
+	shopID := c.Params("shop_id")
+
+	// Check if the TempShop entry exists with the given ShopID
+	var tempShop model.TempShop
+	if err := db.Where("shop_id = ?", shopID).First(&tempShop).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "TempShop not found for given ShopID",
+			"details": err.Error(),
+		})
+	}
+
+	// Return the TempID associated with the Shop
+	return c.JSON(fiber.Map{
+		"temp_id": tempShop.TempID,
+	})
 }
