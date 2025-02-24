@@ -118,20 +118,30 @@ func UpdateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
 //     return c.SendString("Entrepreneur successfully deleted")
 // }
 
-func DeleteEntrepreneurAndShops(db *gorm.DB, c *fiber.Ctx) error {
-    // Get the entrepreneur's id from the URL parameter
-    id := c.Params("id")
+func DeleteEntrepreneurByID(db *gorm.DB, c *fiber.Ctx) error {
+	entrepreneurID := c.Params("id")
 
-    // Delete all shops associated with the entrepreneur
-    if err := db.Where("entrepreneur_username = ?", id).Delete(&model.Shop{}).Error; err != nil {
-        return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete shops")
-    }
+	// Check if the Entrepreneur exists
+	var entrepreneur model.Entrepreneur
+	if err := db.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Entrepreneur not found",
+			"details": err.Error(),
+		})
+	}
 
-    // Now delete the entrepreneur
-    if err := db.Where("id = ?", id).Delete(&model.Entrepreneur{}).Error; err != nil {
-        return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete entrepreneur")
-    }
+	// Delete the Entrepreneur (this will cascade delete associated Shops)
+	if err := db.Delete(&entrepreneur).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to delete entrepreneur",
+			"details": err.Error(),
+		})
+	}
 
-    return c.SendString("Entrepreneur and associated shops successfully deleted")
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Entrepreneur deleted successfully",
+	})
 }
+
+
 
