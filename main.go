@@ -191,7 +191,7 @@ func main() {
 
 
 	//contact to admin
-	app.Post("/contacts/:entrepreneur_id", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
+	app.Post("/contacts", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
 	app.Get("/contacts", func(c *fiber.Ctx) error { return controller.GetAllContacts(db, c) })
 	// app.Post("/contacts", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
 	app.Get("/contacts/:id", func(c *fiber.Ctx) error { return controller.GetContactToAdmin(db, c) })
