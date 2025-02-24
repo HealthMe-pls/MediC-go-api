@@ -25,52 +25,6 @@ func CreateSocialMediaByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 
-func CreateSocialByEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
-	entrepreneurID := c.Params("entrepreneur_id")
-	shopID := c.Params("shop_id")
-
-	// Check if the entrepreneur exists
-	var entrepreneur model.Entrepreneur
-	if err := db.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   "Entrepreneur not found",
-			"details": err.Error(),
-		})
-	}
-
-	// Check if the shop exists and belongs to the entrepreneur
-	var shop model.Shop
-	if err := db.First(&shop, "id = ? AND entrepreneur_id = ?", shopID, entrepreneurID).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   "Shop not found or does not belong to the entrepreneur",
-			"details": err.Error(),
-		})
-	}
-
-	// Parse request body
-	var social model.SocialMedia
-	if err := c.BodyParser(&social); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Failed to parse request body",
-			"details": err.Error(),
-		})
-	}
-
-	// Ensure IsPublic is set to false and assign Shop ID
-	social.IsPublic = false
-	social.ShopID = shop.ID
-
-	// Save the social media
-	if err := db.Create(&social).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to create social media",
-			"details": err.Error(),
-		})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(social)
-}
-
 // -----social media
 
 // GetSocialMedia retrieves a SocialMedia entry by ID
@@ -138,112 +92,59 @@ func DeleteSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
+func CreateSocialWithTemp(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
+    social := new(model.SocialMedia)
+    if err := c.BodyParser(social); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error":   "Failed to parse request body",
+            "details": err.Error(),
+        })
+    }
 
-func CreateSocialWithTemp(db *gorm.DB, c *fiber.Ctx) error {
-	social := new(model.SocialMedia)
-	if err := c.BodyParser(social); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Failed to parse request body",
-			"details": err.Error(),
-		})
-	}
+    // Assign isPublic from function parameter
+    social.IsPublic = isPublic
 
-	// Set is_public to false before saving
-	social.IsPublic = false
+    // Save the social media entry in the SocialMedia table
+    if result := db.Create(&social); result.Error != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error":   "Failed to create social media",
+            "details": result.Error.Error(),
+        })
+    }
 
-	// Save the social media entry in the SocialMedia table
-	if result := db.Create(&social); result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to create social media",
-			"details": result.Error.Error(),
-		})
-	}
+    // Ensure TempID is not nil before dereferencing
+    var tempID uint
+    if social.TempID != nil {
+        tempID = *social.TempID
+    } else {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "TempID is required",
+        })
+    }
 
-	// Ensure TempID is not nil before dereferencing
-	var tempID uint
-	if social.TempID != nil {
-		tempID = *social.TempID
-	} else {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "TempID is required",
-		})
-	}
+    // Create a corresponding TempSocial entry
+    tempSocial := model.TempSocial{
+        TempID:   tempID,
+        SocialID: social.ID,
+        Name:     social.Name,
+        Platform: social.Platform,
+        Link:     social.Link,
+    }
 
-	// Create a corresponding TempSocial entry
-	tempSocial := model.TempSocial{
-		TempID:   tempID,
-		SocialID: social.ID,
-		Name:     social.Name,
-		Platform: social.Platform,
-		Link:     social.Link,
-	}
+    if result := db.Create(&tempSocial); result.Error != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error":   "Failed to create temp social media",
+            "details": result.Error.Error(),
+        })
+    }
 
-	if result := db.Create(&tempSocial); result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to create temp social media",
-			"details": result.Error.Error(),
-		})
-	}
-
-	// Return created social media and temp social media
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"social":     social,
-		"tempSocial": tempSocial,
-	})
+    // Return created social media and temp social media
+    return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+        "social":     social,
+        "tempSocial": tempSocial,
+    })
 }
 
-func AdminCreateSocialWithTemp(db *gorm.DB, c *fiber.Ctx) error {
-	social := new(model.SocialMedia)
-	if err := c.BodyParser(social); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Failed to parse request body",
-			"details": err.Error(),
-		})
-	}
-
-	// Set is_public to false before saving
-	social.IsPublic = true
-
-	// Save the social media entry in the SocialMedia table
-	if result := db.Create(&social); result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to create social media",
-			"details": result.Error.Error(),
-		})
-	}
-
-	// Ensure TempID is not nil before dereferencing
-	var tempID uint
-	if social.TempID != nil {
-		tempID = *social.TempID
-	} else {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "TempID is required",
-		})
-	}
-
-	// Create a corresponding TempSocial entry
-	tempSocial := model.TempSocial{
-		TempID:   tempID,
-		SocialID: social.ID,
-		Name:     social.Name,
-		Platform: social.Platform,
-		Link:     social.Link,
-	}
-
-	if result := db.Create(&tempSocial); result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to create temp social media",
-			"details": result.Error.Error(),
-		})
-	}
-
-	// Return created social media and temp social media
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"social":     social,
-		"tempSocial": tempSocial,
-	})
-}
 
 func GetShopIDBySocialID(db *gorm.DB, c *fiber.Ctx) error {
 	socialID := c.Params("social_id")

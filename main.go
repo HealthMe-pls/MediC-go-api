@@ -198,14 +198,15 @@ func main() {
 	app.Put("/contacts/:id", func(c *fiber.Ctx) error { return controller.UpdateContactToAdmin(db, c) })
 	app.Delete("/contacts/:id", func(c *fiber.Ctx) error { return controller.DeleteContactToAdmin(db, c) })
 
+	//nothing usefull
 	// TempShop routes
 	app.Post("/tempshops", func(c *fiber.Ctx) error { return controller.CreateTempShop(db, c) })
 	app.Get("/tempshops", func(c *fiber.Ctx) error { return controller.GetTempShops(db, c) })
 	app.Get("/tempshops/:id", func(c *fiber.Ctx) error { return controller.GetTempShopByID(db, c) })
 	app.Put("/tempshops/:id", func(c *fiber.Ctx) error { return controller.UpdateTempShop(db, c) })
 	app.Delete("/tempshops/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShop(db, c) })
-
 	// TempShopOpenDate routes
+	//use this 
 	app.Post("/tempshopopendates", func(c *fiber.Ctx) error { return controller.CreateTempShopOpenDate(db, c) })
 	app.Get("/tempshopopendates", func(c *fiber.Ctx) error { return controller.GetTempShopOpenDates(db, c) })
 	app.Get("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.GetTempShopOpenDateByID(db, c) })
@@ -213,18 +214,19 @@ func main() {
 	app.Delete("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShopOpenDate(db, c) })
 
 	//create with temp
-	app.Post("/createmenu", func(c *fiber.Ctx) error {return controller.CreateMenuWithTemp(db, c)})
-	app.Post("/createsocial", func(c *fiber.Ctx) error {return controller.CreateSocialWithTemp(db, c)})
+	app.Post("/socials/entrepreneur", func(c *fiber.Ctx) error {return controller.CreateSocialWithTemp(db, c, false) })
+	app.Post("/menus/entrepreneur", func(c *fiber.Ctx) error {return controller.CreateMenuWithTemp(db, c, false) })
 	//admin
+	app.Post("/socials/admin", func(c *fiber.Ctx) error {return controller.CreateSocialWithTemp(db, c, true)})
+	app.Post("/menus/admin", func(c *fiber.Ctx) error {return controller.CreateMenuWithTemp(db, c, true) })
 	app.Post("/createshop", func(c *fiber.Ctx) error {return controller.CreateShopWithTemp(db, c)})
-	app.Post("/create/menu", func(c *fiber.Ctx) error {return controller.AdminCreateMenuWithTemp(db, c)})
-	app.Post("/create/social", func(c *fiber.Ctx) error {return controller.AdminCreateSocialWithTemp(db, c)})
-	
-	//menuupdate
+	//menuupdate by entrepreneur
 	app.Put("/updatemenu/:menu_id", func(c *fiber.Ctx) error {return controller.UpdateTempMenuByMenuID(db, c)})
-	
+	//social update by entrepreneur
+	app.Put("updatesocial/:social_id",func(c *fiber.Ctx) error {return controller.UpdateSocialBySocialID(db, c)})
 	//Bin
 	// Bin routes
+	//entrepreneur delete menu
 	app.Post("/menubin", func(c *fiber.Ctx) error { return controller.CreateBinMenu(db, c) })
 	app.Get("/menubin", func(c *fiber.Ctx) error { return controller.GetBinMenus(db, c) })
 	app.Get("/menubin/:id", func(c *fiber.Ctx) error { return controller.GetBinMenuByID(db, c) })
@@ -233,14 +235,17 @@ func main() {
 	app.Delete("/menubin/:id", func(c *fiber.Ctx) error { return controller.DeleteBinMenu(db, c) })
 	app.Delete("/menubin/temp/:temp_id", func(c *fiber.Ctx) error { return controller.DeleteBinMenuByTempID(db, c) }) // 🔥 Delete by TempID
 
+	//entrepreneur delete photo
 	app.Post("/photobin", func(c *fiber.Ctx) error { return controller.CreateBinPhoto(db, c) })
+	//nothing usefull this for test
 	app.Get("/photobin", func(c *fiber.Ctx) error { return controller.GetBinPhotos(db, c) })
 	app.Get("/photobin/:id", func(c *fiber.Ctx) error { return controller.GetBinPhotoByID(db, c) })
 	app.Get("/photobin/temp/:temp_id", func(c *fiber.Ctx) error { return controller.GetBinPhotoByTempID(db, c) })
 	// app.Put("/photobin/:id", func(c *fiber.Ctx) error { return controller.UpdateBinPhoto(db, c) })
 	app.Delete("/photobin/:id", func(c *fiber.Ctx) error { return controller.DeleteBinPhoto(db, c) })
 	app.Delete("/photobin/temp/:temp_id", func(c *fiber.Ctx) error { return controller.DeleteBinPhotoByTempID(db, c) }) // 🔥 Delete by TempID
-
+	
+	//entrepreneur delete social
 	app.Post("/socialbin", func(c *fiber.Ctx) error { return controller.CreateBinSocial(db, c) })
 	app.Get("/socialbin", func(c *fiber.Ctx) error { return controller.GetBinSocials(db, c) })
 	app.Get("/socialbin/:id", func(c *fiber.Ctx) error { return controller.GetBinSocialByID(db, c) })
@@ -248,7 +253,8 @@ func main() {
 	// app.Put("/socialbin/:id", func(c *fiber.Ctx) error { return controller.UpdateBinSocial(db, c) })
 	app.Delete("/socialbin/:id", func(c *fiber.Ctx) error { return controller.DeleteBinSocial(db, c) })
 	app.Delete("/socialbin/temp/:temp_id", func(c *fiber.Ctx) error { return controller.DeleteBinSocialByTempID(db, c) }) // 🔥 Delete by TempID
-
+	
+	//not available
 	app.Get("/availablemenus", func(c *fiber.Ctx) error { return controller.GetAvailableMenus(db, c) })
 	app.Get("/availablemenus/:shop_id", func(c *fiber.Ctx) error { return controller.GetAvailableMenusByShopID(db, c) })
 	app.Get("/availablephotos/menu/:menu_id", func(c *fiber.Ctx) error { return controller.GetAvailablePhotosByMenuID(db, c) })
@@ -256,6 +262,8 @@ func main() {
 	app.Get("/availablesocial/:shop_id", func(c *fiber.Ctx) error { return controller.GetAvailableSocialByShopID(db, c) })
 	app.Get("/availableshopDetail/:shop_id", func(c *fiber.Ctx) error { return controller.GetAvailableShopDetailByID(db, c) })
 
+
+	//admin manage
 	app.Get("/approve/:id", func(c *fiber.Ctx) error { return controller.Handleapprove(db, c) })
 	app.Put("/notApprove/:temp_id", func(c *fiber.Ctx) error { return controller.HandleNotApprove(db, c) })
 

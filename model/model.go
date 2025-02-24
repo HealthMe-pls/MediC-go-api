@@ -155,6 +155,7 @@ type ContactToAdmin struct {
 	Problem      string `json:"problem"`
 	FromUsername string `json:"from_username"`
 	Detail       string `json:"detail"`
+	ContactToEntrepreneur	 string `json:"contact_to_en"`
 }
 
 type EventAct struct {
