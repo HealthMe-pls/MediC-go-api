@@ -208,18 +208,18 @@ func DeleteShopOpenDate(db *gorm.DB, c *fiber.Ctx) error {
 // }
 
 
-// func GetAllContacts(db *gorm.DB, c *fiber.Ctx) error {
-// 	var contacts []model.ContactToAdmin
+func GetAllContacts(db *gorm.DB, c *fiber.Ctx) error {
+	var contacts []model.ContactToAdmin
 
-// 	// Fetch all contact requests from the database
-// 	if err := db.Find(&contacts).Error; err != nil {
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-// 			"error": "Failed to retrieve contacts",
-// 		})
-// 	}
+	// Fetch all contact requests from the database
+	if err := db.Find(&contacts).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve contacts",
+		})
+	}
 
-// 	return c.JSON(contacts)
-// }
+	return c.JSON(contacts)
+}
 func CreateContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	// Parse Entrepreneur ID from request parameters
 	entrepreneurID, err := strconv.ParseUint(c.Params("entrepreneur_id"), 10, 64)
