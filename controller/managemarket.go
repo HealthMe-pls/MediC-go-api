@@ -21,6 +21,22 @@ func CreateMarketOpenDate(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusCreated).JSON(marketOpenDate)
 }
+// GetAllMarketDates retrieves all MarketOpenDate entries
+func GetAllMarketDates(db *gorm.DB, c *fiber.Ctx) error {
+	var marketOpenDates []model.MarketOpenDate
+
+	// Fetch all market open dates with related shop open dates
+	if err := db.Preload("ShopOpenDates").Find(&marketOpenDates).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve market open dates",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"market_open_dates": marketOpenDates,
+	})
+}
 
 // GetMarketOpenDate retrieves a MarketOpenDate by ID
 func GetMarketOpenDate(db *gorm.DB, c *fiber.Ctx) error {
@@ -85,7 +101,22 @@ func CreateShopOpenDate(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusCreated).JSON(shopOpenDate)
 }
+// GetAllShopTimes retrieves all shop open dates
+func GetAllShopTimes(db *gorm.DB, c *fiber.Ctx) error {
+	var shopOpenDates []model.ShopOpenDate
 
+	// Fetch all shop open times with related shop and market open date
+	if err := db.Preload("Shop").Preload("MarketOpenDate").Find(&shopOpenDates).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve shop open times",
+			"details": err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"shop_open_dates": shopOpenDates,
+	})
+}
 // GetShopOpenDate retrieves a ShopOpenDate entry by ID
 func GetShopOpenDate(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -167,44 +198,6 @@ func CreateContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusCreated).JSON(contactToAdmin)
 }
-
-// func CreateContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
-// 	// Parse Entrepreneur ID from request parameters
-// 	entrepreneurID, err := strconv.ParseUint(c.Params("entrepreneur_id"), 10, 64)
-// 	if err != nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-// 			"error": "Invalid entrepreneur ID",
-// 		})
-// 	}
-
-// 	// Fetch the entrepreneur's details to get the username
-// 	var entrepreneur model.Entrepreneur
-// 	if err := db.First(&entrepreneur, entrepreneurID).Error; err != nil {
-// 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-// 			"error": "Entrepreneur not found",
-// 		})
-// 	}
-
-// 	// Parse request body
-// 	var contact model.ContactToAdmin
-// 	if err := c.BodyParser(&contact); err != nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-// 			"error": "Invalid request body",
-// 		})
-// 	}
-
-// 	// Set FromUsername from the entrepreneur's username
-// 	contact.FromUsername = entrepreneur.Username
-
-// 	// Save to database
-// 	if err := db.Create(&contact).Error; err != nil {
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-// 			"error": "Failed to create contact request",
-// 		})
-// 	}
-
-// 	return c.JSON(contact)
-// }
 
 
 func GetAllContacts(db *gorm.DB, c *fiber.Ctx) error {

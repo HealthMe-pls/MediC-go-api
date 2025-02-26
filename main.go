@@ -146,8 +146,9 @@ func main() {
 	app.Put("/workshops/:id", func(c *fiber.Ctx) error { return controller.UpdateWorkshop(db, c) })
 	app.Delete("/workshops/:id", func(c *fiber.Ctx) error { return controller.DeleteWorkshop(db, c) })
 
-	//manage
+	//manage market
 	app.Post("/marketDate", func(c *fiber.Ctx) error { return controller.CreateMarketOpenDate(db, c) })
+	app.Get("/marketDates", func(c *fiber.Ctx) error {return controller.GetAllMarketDates(db, c)})
 	app.Get("/marketDate/:id", func(c *fiber.Ctx) error { return controller.GetMarketOpenDate(db, c) })
 	app.Put("/marketDate/:id", func(c *fiber.Ctx) error { return controller.UpdateMarketOpenDate(db, c) })
 	app.Delete("/marketDate/:id", func(c *fiber.Ctx) error { return controller.DeleteMarketOpenDate(db, c) })
@@ -162,6 +163,7 @@ func main() {
 
 	//shop open time
 	app.Post("/shoptime", func(c *fiber.Ctx) error { return controller.CreateShopOpenDate(db, c) })
+	app.Get("/shoptimes", func(c *fiber.Ctx) error {return controller.GetAllShopTimes(db, c)})
 	app.Get("/shoptime/:id", func(c *fiber.Ctx) error { return controller.GetShopOpenDate(db, c) })
 	app.Get("/shoptime/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetShopOpenDateByShopID(db, c) })
 	app.Put("/shoptime/:id", func(c *fiber.Ctx) error { return controller.UpdateShopOpenDate(db, c) })
