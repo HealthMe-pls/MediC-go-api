@@ -286,7 +286,9 @@ func main() {
 	app.Post("/login", func(c *fiber.Ctx) error {
 		return controller.Login(db, c)
 	})
-
+	app.Get("/shopLogin", func(c *fiber.Ctx) error {
+        return controller.GetShopDetailsByLoggedInEntrepreneur(db, c)
+    })
 
 	app.Get("/config", getENV)
 
