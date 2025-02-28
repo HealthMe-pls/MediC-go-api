@@ -259,3 +259,165 @@ func DeleteContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+
+
+
+// GetAllTempShopsWaiting retrieves all TempShop entries with status "waiting"
+func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
+	var tempShops []model.TempShop
+	
+	// Fetch all TempShop entries where status is "waiting"
+	if err := db.Where("status = ?", "Waiting").
+		Find(&tempShops).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve temp shops",
+			"details": err.Error(),
+		})
+	}
+	
+	var tempShopResponses []fiber.Map
+	for _, tempShop := range tempShops {
+		if tempShop.ShopID == nil { 
+			continue // Skip if ShopID is nil
+		}
+		shopID := *tempShop.ShopID
+
+		// Fetch social media info
+		TempSocials, err := GetTempSocialsByShopID(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve social media data",
+				"details": err.Error(),
+			})
+		}
+
+		// FIX: Correct type assertion (use []fiber.Map instead of []model.SocialMedia)
+		deleteSocials, _ := TempSocials["deleteSocials"].([]fiber.Map)
+		editSocials, _ := TempSocials["editSocials"].([]fiber.Map)
+		addSocials, _ := TempSocials["addSocials"].([]fiber.Map)
+
+		tempShopResponses = append(tempShopResponses, fiber.Map{
+			"id":             tempShop.TempID,
+			"name":           tempShop.Name,
+			"shop_id":        shopID,
+			"deleteSocials":  deleteSocials,
+			"editSocials":    editSocials,
+			"addSocials":     addSocials,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"temp_shops": tempShopResponses,
+	})
+}
+
+
+func GetTempSocialsByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
+	var deleteSocials []model.SocialMedia
+	var editSocials []model.SocialMedia
+	var addSocials []model.SocialMedia
+	// Subquery to get SocialIDs that exist in DeleteSocial
+	subQuery := db.Table("delete_socials").Select("social_id")
+
+	// Query for deleted socials (public and in DeleteSocial)
+	if err := db.Where("shop_id = ? AND is_public = ? AND id IN (?)", shopID, true, subQuery).
+		Find(&deleteSocials).Error; err != nil {
+		return nil, err
+	}
+
+	// Query for editable socials (public but NOT in DeleteSocial)
+	if err := db.Where("shop_id = ? AND is_public = ? AND id NOT IN (?)", shopID, true, subQuery).
+		Find(&editSocials).Error; err != nil {
+		return nil, err
+	}
+
+	if err := db.Where("shop_id = ? AND is_public = ?", shopID, false).
+	Find(&addSocials).Error; err != nil {
+	return nil, err
+	}
+	// Convert results to fiber.Map
+	deleteResult := make([]fiber.Map, len(deleteSocials))
+	for i, social := range deleteSocials {
+		deleteResult[i] = fiber.Map{
+			"id":        social.ID,
+			"name":      social.Name,
+			"platform":  social.Platform,
+			"link":      social.Link,
+			"shop_id":   social.ShopID,
+			"is_public": social.IsPublic,
+		}
+	}
+
+	editResult := make([]fiber.Map, len(editSocials))
+	for i, social := range editSocials {
+		editResult[i] = fiber.Map{
+			"id":        social.ID,
+			"name":      social.Name,
+			"platform":  social.Platform,
+			"link":      social.Link,
+			"shop_id":   social.ShopID,
+			"is_public": social.IsPublic,
+		}
+	}
+	addResult := make([]fiber.Map, len(addSocials))
+	for i, social := range addSocials {
+		addResult[i] = fiber.Map{
+			"id":        social.ID,
+			"name":      social.Name,
+			"platform":  social.Platform,
+			"link":      social.Link,
+			"shop_id":   social.ShopID,
+			"is_public": social.IsPublic,
+		}
+	}
+	return fiber.Map{
+		"deleteSocials": deleteResult,
+		"editSocials":   editResult,
+		"addSocials":	addResult,
+	}, nil
+}
+
+// func ExampleFunction(db *gorm.DB, shopID uint) error {
+// 	// Get social data
+// 	social, err := gettempsocial(db, shopID)
+// 	if err != nil {
+// 		fmt.Println("Error retrieving temp social:", err)
+// 		return err
+// 	}
+
+// 	// Extract delete and edit socials
+// 	deleteSocials, _ := social["deleteSocials"].([]model.DeleteSocial)
+// 	editSocials, _ := social["editSocials"].([]model.SocialMedia)
+
+// 	// Use them separately
+// 	fmt.Println("Delete Socials:", deleteSocials)
+// 	fmt.Println("Edit Socials:", editSocials)
+
+// 	return nil
+// }
+
+// func GetAddSocialByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
+// 	var socialMedia []model.SocialMedia
+
+// 	// Query only the records where IsPublic is false
+// 	if err := db.Where("shop_id = ? AND is_public = ?", shopID, false).
+// 		Find(&socialMedia).Error; err != nil {
+// 		return nil, err
+// 	}
+
+// 	// Convert to a slice of maps to return clean JSON data
+// 	result := make([]fiber.Map, len(socialMedia))
+// 	for i, social := range socialMedia {
+// 		result[i] = fiber.Map{
+// 			"id":        social.ID,
+// 			"name":      social.Name,
+// 			"platform":  social.Platform,
+// 			"link":      social.Link,
+// 			"shop_id":   social.ShopID,
+// 			"is_public": social.IsPublic,
+// 		}
+// 	}
+
+// 	return result, nil
+// }

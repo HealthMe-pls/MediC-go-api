@@ -267,7 +267,9 @@ func main() {
 	app.Get("/availablesocial/:shop_id", func(c *fiber.Ctx) error { return controller.GetAvailableSocialByShopID(db, c) })
 	app.Get("/availableshopDetail/:shop_id", func(c *fiber.Ctx) error { return controller.GetAvailableShopDetailByID(db, c) })
 
-
+	//tempshop
+	app.Get("/waitingshops", func(c *fiber.Ctx) error {return controller.GetAllTempShopsWaiting(db, c)})
+	
 	//admin manage
 	app.Get("/approve/:id", func(c *fiber.Ctx) error { return controller.Handleapprove(db, c) })
 	app.Put("/notApprove/:temp_id", func(c *fiber.Ctx) error { return controller.HandleNotApprove(db, c) })
