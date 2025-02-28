@@ -316,7 +316,7 @@ func SetupDatabase() *gorm.DB {
 	fmt.Print(dsn)
 	if dsn == "" {
 		// Default for development
-		dsn = "user:12345678@tcp(127.0.0.1:3306)/BFM?charset=utf8mb4&parseTime=True&loc=Local"
+		dsn = "user:12345678@tcp(159.65.128.227:3306)/BFM?charset=utf8mb4&parseTime=True&loc=Local"
 	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: newLogger})
