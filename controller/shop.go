@@ -449,13 +449,6 @@ func CreateShopWithTemp(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
-	// Update is_public to false for all ShopMenu items linked to this shop
-	if err := db.Model(&model.ShopMenu{}).Where("shop_id = ?", shop.ID).Update("is_public", false).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to update shop menus",
-			"details": err.Error(),
-		})
-	}
 
 	// Return the created Shop and TempShop details
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
