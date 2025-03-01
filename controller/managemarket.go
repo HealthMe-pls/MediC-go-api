@@ -260,13 +260,10 @@ func DeleteContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-
-
-
 // GetAllTempShopsWaiting retrieves all TempShop entries with status "waiting"
 func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 	var tempShops []model.TempShop
-	
+
 	// Fetch all TempShop entries where status is "waiting"
 	if err := db.Where("status = ?", "Waiting").
 		Find(&tempShops).Error; err != nil {
@@ -275,10 +272,10 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 			"details": err.Error(),
 		})
 	}
-	
+
 	var tempShopResponses []fiber.Map
 	for _, tempShop := range tempShops {
-		if tempShop.ShopID == nil { 
+		if tempShop.ShopID == nil {
 			continue // Skip if ShopID is nil
 		}
 		shopID := *tempShop.ShopID
@@ -292,18 +289,63 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 			})
 		}
 
-		// FIX: Correct type assertion (use []fiber.Map instead of []model.SocialMedia)
+		// Fetch menu info
+		tempMenus, err := getMenuForTempByShopID(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve menu data",
+				"details": err.Error(),
+			})
+		}
+
+		// Fetch photo info
+		tempPhotos, err := getPhotoForTempByShopID(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve photo data",
+				"details": err.Error(),
+			})
+		}
+
+		// Fetch shop open time info
+		tempTimes, err := GetTempTimeByShopID(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve shop time data",
+				"details": err.Error(),
+			})
+		}
+
+		// Fetch permanent shop open date info
+		shopOpenDates, err := GetShopOpenDateForTempByShopID(db, shopID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to retrieve shop open date data",
+				"details": err.Error(),
+			})
+		}
+
+		// Extract social media data
 		deleteSocials, _ := TempSocials["deleteSocials"].([]fiber.Map)
-		editSocials, _ := TempSocials["editSocials"].([]fiber.Map)
-		addSocials, _ := TempSocials["addSocials"].([]fiber.Map)
+		socials, _ := TempSocials["socials"].([]fiber.Map)
+
+		// Extract time data
+		addTime, _ := tempTimes["addTime"].([]fiber.Map)
+		editTime, _ := tempTimes["editTime"].([]fiber.Map)
+		deleteTime, _ := tempTimes["deleteTime"].([]fiber.Map)
 
 		tempShopResponses = append(tempShopResponses, fiber.Map{
 			"id":             tempShop.TempID,
 			"name":           tempShop.Name,
 			"shop_id":        shopID,
 			"deleteSocials":  deleteSocials,
-			"editSocials":    editSocials,
-			"addSocials":     addSocials,
+			"socials":        socials,
+			"menus":          tempMenus,   // Include menus in the response
+			"photos":         tempPhotos,  // Include photos in the response
+			"addTime":        addTime,     // Include added times
+			"editTime":       editTime,    // Include edited times
+			"deleteTime":     deleteTime,  // Include deleted times
+			"time":      	  shopOpenDates, // Include shop open dates
 		})
 	}
 
@@ -313,10 +355,12 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 
+
+
 func GetTempSocialsByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
 	var deleteSocials []model.SocialMedia
-	var editSocials []model.SocialMedia
-	var addSocials []model.SocialMedia
+	var socials []model.SocialMedia
+
 	// Subquery to get SocialIDs that exist in DeleteSocial
 	subQuery := db.Table("delete_socials").Select("social_id")
 
@@ -326,16 +370,13 @@ func GetTempSocialsByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
 		return nil, err
 	}
 
-	// Query for editable socials (public but NOT in DeleteSocial)
-	if err := db.Where("shop_id = ? AND is_public = ? AND id NOT IN (?)", shopID, true, subQuery).
-		Find(&editSocials).Error; err != nil {
+	// Query for editable and added socials (public and NOT in DeleteSocial, or private)
+	if err := db.Where("shop_id = ? AND (is_public = ? AND id NOT IN (?) OR is_public = ?)", 
+		shopID, true, subQuery, false).
+		Find(&socials).Error; err != nil {
 		return nil, err
 	}
 
-	if err := db.Where("shop_id = ? AND is_public = ?", shopID, false).
-	Find(&addSocials).Error; err != nil {
-	return nil, err
-	}
 	// Convert results to fiber.Map
 	deleteResult := make([]fiber.Map, len(deleteSocials))
 	for i, social := range deleteSocials {
@@ -349,9 +390,9 @@ func GetTempSocialsByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
 		}
 	}
 
-	editResult := make([]fiber.Map, len(editSocials))
-	for i, social := range editSocials {
-		editResult[i] = fiber.Map{
+	socialsResult := make([]fiber.Map, len(socials))
+	for i, social := range socials {
+		socialsResult[i] = fiber.Map{
 			"id":        social.ID,
 			"name":      social.Name,
 			"platform":  social.Platform,
@@ -360,64 +401,186 @@ func GetTempSocialsByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
 			"is_public": social.IsPublic,
 		}
 	}
-	addResult := make([]fiber.Map, len(addSocials))
-	for i, social := range addSocials {
-		addResult[i] = fiber.Map{
-			"id":        social.ID,
-			"name":      social.Name,
-			"platform":  social.Platform,
-			"link":      social.Link,
-			"shop_id":   social.ShopID,
-			"is_public": social.IsPublic,
-		}
-	}
+
 	return fiber.Map{
 		"deleteSocials": deleteResult,
-		"editSocials":   editResult,
-		"addSocials":	addResult,
+		"socials":       socialsResult, // Combined editSocials & addSocials
+	}, nil
+}
+func getMenuForTempByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
+	var menus []model.ShopMenu
+
+	// Subquery to get MenuIDs that exist in DeleteMenu
+	subQuery := db.Table("delete_menus").Select("menu_id")
+
+	// Query menus based on the conditions
+	if err := db.Where("(is_public = ? AND id NOT IN (?)) OR is_public = ?", true, subQuery, false).
+		Where("shop_id = ?", shopID).
+		Find(&menus).Error; err != nil {
+		return nil, err
+	}
+
+	// Convert results to fiber.Map
+	var menuResults []fiber.Map
+
+	for _, menu := range menus {
+		// Get associated photos
+		photos, err := getPhotoForTempByMenuID(db, menu.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		menuResults = append(menuResults, fiber.Map{
+			"id":                  menu.ID,
+			"product_name":        menu.ProductName,
+			"product_description": menu.ProductDescription,
+			"price":               menu.Price,
+			"shop_id":             menu.ShopID,
+			"is_public":           menu.IsPublic,
+			"photos":              photos,
+		})
+	}
+
+	return menuResults, nil
+}
+
+
+func getPhotoForTempByMenuID(db *gorm.DB, menuID uint) ([]fiber.Map, error) {
+	var photos []model.Photo
+
+	// Subquery to get PhotoIDs that exist in DeletePhoto
+	subQuery := db.Table("delete_photos").Select("photo_id")
+
+	// Query photos based on the condition
+	if err := db.Where("(is_public = ? AND id NOT IN (?)) OR is_public = ?", true, subQuery, false).
+		Where("menu_id = ?", menuID).
+		Find(&photos).Error; err != nil {
+		return nil, err
+	}
+
+	// Convert results to fiber.Map
+	result := make([]fiber.Map, len(photos))
+	for i, photo := range photos {
+		result[i] = fiber.Map{
+			"id":        photo.ID,
+			"path_file": photo.PathFile,
+			"menu_id":   photo.MenuID,
+			"is_public": photo.IsPublic,
+		}
+	}
+
+	return result, nil
+}
+
+
+func getPhotoForTempByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
+	var photos []model.Photo
+
+	// Subquery to get PhotoIDs that exist in DeletePhoto
+	subQuery := db.Table("delete_photos").Select("photo_id")
+
+	// Query photos based on the condition
+	if err := db.Where("(is_public = ? AND id NOT IN (?)) OR is_public = ?", true, subQuery, false).
+		Where("shop_id = ?", shopID).
+		Find(&photos).Error; err != nil {
+		return nil, err
+	}
+
+	// Convert results to fiber.Map
+	result := make([]fiber.Map, len(photos))
+	for i, photo := range photos {
+		result[i] = fiber.Map{
+			"id":        photo.ID,
+			"path_file": photo.PathFile,
+			"shop_id":   photo.ShopID,
+			"is_public": photo.IsPublic,
+		}
+	}
+
+	return result, nil
+}
+
+func GetTempTimeByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
+	var addTime []model.TempShopOpenDate
+	var editTime []model.TempShopOpenDate
+	var deleteTime []model.TempShopOpenDate
+
+	// Query for added times
+	if err := db.Where("shop_id = ? AND operation = ?", shopID, "add").Find(&addTime).Error; err != nil {
+		return nil, err
+	}
+
+	// Query for edited times
+	if err := db.Where("shop_id = ? AND operation = ?", shopID, "edit").Find(&editTime).Error; err != nil {
+		return nil, err
+	}
+
+	// Query for deleted times
+	if err := db.Where("shop_id = ? AND operation = ?", shopID, "delete").Find(&deleteTime).Error; err != nil {
+		return nil, err
+	}
+
+	// Convert results to fiber.Map
+	addTimeResult := make([]fiber.Map, len(addTime))
+	for i, timeEntry := range addTime {
+		addTimeResult[i] = fiber.Map{
+			"id":                 timeEntry.ID,
+			"start_time":         timeEntry.StartTime,
+			"end_time":           timeEntry.EndTime,
+			"shop_id":            timeEntry.ShopID,
+			"market_open_date_id": timeEntry.MarketOpenDateID,
+		}
+	}
+
+	editTimeResult := make([]fiber.Map, len(editTime))
+	for i, timeEntry := range editTime {
+		editTimeResult[i] = fiber.Map{
+			"id":                 timeEntry.ID,
+			"start_time":         timeEntry.StartTime,
+			"end_time":           timeEntry.EndTime,
+			"shop_id":            timeEntry.ShopID,
+			"market_open_date_id": timeEntry.MarketOpenDateID,
+		}
+	}
+
+	deleteTimeResult := make([]fiber.Map, len(deleteTime))
+	for i, timeEntry := range deleteTime {
+		deleteTimeResult[i] = fiber.Map{
+			"id":                 timeEntry.ID,
+			"start_time":         timeEntry.StartTime,
+			"end_time":           timeEntry.EndTime,
+			"shop_id":            timeEntry.ShopID,
+			"market_open_date_id": timeEntry.MarketOpenDateID,
+		}
+	}
+
+	return fiber.Map{
+		"addTime":    addTimeResult,
+		"editTime":   editTimeResult,
+		"deleteTime": deleteTimeResult,
 	}, nil
 }
 
-// func ExampleFunction(db *gorm.DB, shopID uint) error {
-// 	// Get social data
-// 	social, err := gettempsocial(db, shopID)
-// 	if err != nil {
-// 		fmt.Println("Error retrieving temp social:", err)
-// 		return err
-// 	}
+// GetShopOpenDateByShopID retrieves all ShopOpenDate entries for a given shop ID
+func GetShopOpenDateForTempByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
+	var shopOpenDates []model.ShopOpenDate
 
-// 	// Extract delete and edit socials
-// 	deleteSocials, _ := social["deleteSocials"].([]model.DeleteSocial)
-// 	editSocials, _ := social["editSocials"].([]model.SocialMedia)
+	// Query for shop open dates
+	if err := db.Where("shop_id = ?", shopID).Find(&shopOpenDates).Error; err != nil {
+		return nil, err
+	}
 
-// 	// Use them separately
-// 	fmt.Println("Delete Socials:", deleteSocials)
-// 	fmt.Println("Edit Socials:", editSocials)
+	// Convert result to fiber.Map
+	shopOpenDateResults := make([]fiber.Map, len(shopOpenDates))
+	for i, openDate := range shopOpenDates {
+		shopOpenDateResults[i] = fiber.Map{
+			"id":                 openDate.ID,
+			"start_time":         openDate.StartTime,
+			"end_time":           openDate.EndTime,
+			"shop_id":            openDate.ShopID,
+			"market_open_date_id": openDate.MarketOpenDateID,
+		}
+	}
 
-// 	return nil
-// }
-
-// func GetAddSocialByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
-// 	var socialMedia []model.SocialMedia
-
-// 	// Query only the records where IsPublic is false
-// 	if err := db.Where("shop_id = ? AND is_public = ?", shopID, false).
-// 		Find(&socialMedia).Error; err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Convert to a slice of maps to return clean JSON data
-// 	result := make([]fiber.Map, len(socialMedia))
-// 	for i, social := range socialMedia {
-// 		result[i] = fiber.Map{
-// 			"id":        social.ID,
-// 			"name":      social.Name,
-// 			"platform":  social.Platform,
-// 			"link":      social.Link,
-// 			"shop_id":   social.ShopID,
-// 			"is_public": social.IsPublic,
-// 		}
-// 	}
-
-// 	return result, nil
-// }
+	return shopOpenDateResults, nil
+}
