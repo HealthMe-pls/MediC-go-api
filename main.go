@@ -160,25 +160,19 @@ func main() {
 	app.Post("/social", func(c *fiber.Ctx) error { return controller.CreateSocialMediaByAdmin(db, c) })
 	app.Get("/social/:id", func(c *fiber.Ctx) error { return controller.GetSocialMedia(db, c) })
 	app.Get("/social/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetSocialMediaByShopID(db, c) })
-	//admin update and delete
-	app.Put("/social/:id", func(c *fiber.Ctx) error { return controller.UpdateSocialMedia(db, c) })
-	app.Delete("/social/:id", func(c *fiber.Ctx) error { return controller.DeleteSocialMedia(db, c) })
+
 
 	//shop open time
-	app.Post("/shoptime", func(c *fiber.Ctx) error { return controller.CreateShopOpenDate(db, c) })
+
 	app.Get("/shoptime", func(c *fiber.Ctx) error {return controller.GetAllShopTimes(db, c)})
 	app.Get("/shoptime/:id", func(c *fiber.Ctx) error { return controller.GetShopOpenDate(db, c) })
 	app.Get("/shoptime/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetShopOpenDateByShopID(db, c) })
-	app.Put("/shoptime/:id", func(c *fiber.Ctx) error { return controller.UpdateShopOpenDate(db, c) })
-	app.Delete("/shoptime/:id", func(c *fiber.Ctx) error { return controller.DeleteShopOpenDate(db, c) })
+
 
 	//shop menu
 	app.Post("/shopmenu", func(c *fiber.Ctx) error { return controller.CreateShopMenuByAdmin(db, c) })
 	app.Get("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.GetShopMenu(db, c) })
 	app.Get("/shopmenu/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetShopMenuByShopID(db, c) })
-	//admin update and delete
-	app.Put("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.UpdateShopMenu(db, c) })
-	app.Delete("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.DeleteShopMenu(db, c) })
 
 	//photo
 	app.Post("/photos", func(c *fiber.Ctx) error { return controller.CreatePhoto(db, c) })
@@ -187,15 +181,6 @@ func main() {
 	app.Get("/photos/shop/:shop_id", func(c *fiber.Ctx) error { return controller.GetPhotoByShopID(db, c) })
 	app.Put("/photos/:id", func(c *fiber.Ctx) error { return controller.UpdatePhoto(db, c) })
 	app.Delete("/photos/:id", func(c *fiber.Ctx) error { return controller.DeletePhoto(db, c) })
-	// photo create by entrepreneur
-	app.Post("/photosmenu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c,false)})
-	app.Post("/photosshop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c,false)})
-	//photo create by admin
-	app.Post("/photos/workshop/:workshop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByWorkshopID(db, c)})
-	app.Post("/photos/menu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c,true)})
-	app.Post("/photos/shop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c,true)})
-	
-
 
 	//contact to admin
 	app.Post("/contacts", func(c *fiber.Ctx) error { return controller.CreateContactToAdmin(db, c) })
@@ -214,16 +199,27 @@ func main() {
 	app.Delete("/tempshops/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShop(db, c) })
 	
 	// TempShopOpenDate routes
-	//use this 
-	app.Post("/tempshopopendates", func(c *fiber.Ctx) error { return controller.CreateTempShopOpenDate(db, c) })
+
 	app.Get("/tempshopopendates", func(c *fiber.Ctx) error { return controller.GetTempShopOpenDates(db, c) })
 	app.Get("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.GetTempShopOpenDateByID(db, c) })
 	app.Put("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.UpdateTempShopOpenDate(db, c) })
 	app.Delete("/tempshopopendates/:id", func(c *fiber.Ctx) error { return controller.DeleteTempShopOpenDate(db, c) })
-
+	//entrepreneur
+	//use this 
+	app.Post("/tempshopopendates", func(c *fiber.Ctx) error { return controller.CreateTempShopOpenDate(db, c) })
 	//create with temp
 	app.Post("/socials/entrepreneur", func(c *fiber.Ctx) error {return controller.CreateSocialWithTemp(db, c, false) })
 	app.Post("/menus/entrepreneur", func(c *fiber.Ctx) error {return controller.CreateMenuWithTemp(db, c, false) })
+	//entrepreneur delete social
+	app.Post("/socialbin", func(c *fiber.Ctx) error { return controller.CreateBinSocial(db, c) })
+	//entrepreneur delete photo
+	app.Post("/photobin", func(c *fiber.Ctx) error { return controller.CreateBinPhoto(db, c) })
+	//entrepreneur delete menu
+	app.Post("/menubin", func(c *fiber.Ctx) error { return controller.CreateBinMenu(db, c) })
+	// photo create by entrepreneur
+	app.Post("/photosmenu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c,false)})
+	app.Post("/photosshop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c,false)})
+	
 	//admin
 	app.Post("/socials/admin", func(c *fiber.Ctx) error {return controller.CreateSocialWithTemp(db, c, true)})
 	app.Post("/menus/admin", func(c *fiber.Ctx) error {return controller.CreateMenuWithTemp(db, c, true) })
@@ -232,10 +228,21 @@ func main() {
 	app.Put("/updatemenu/:menu_id", func(c *fiber.Ctx) error {return controller.UpdateTempMenuByMenuID(db, c)})
 	//social update by entrepreneur
 	app.Put("updatesocial/:social_id",func(c *fiber.Ctx) error {return controller.UpdateSocialBySocialID(db, c)})
-	//Bin
-	// Bin routes
-	//entrepreneur delete menu
-	app.Post("/menubin", func(c *fiber.Ctx) error { return controller.CreateBinMenu(db, c) })
+	//photo create by admin
+	app.Post("/photos/workshop/:workshop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByWorkshopID(db, c)})
+	app.Post("/photos/menu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c,true)})
+	app.Post("/photos/shop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c,true)})
+	//admin update and delete
+	app.Put("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.UpdateShopMenu(db, c) })
+	app.Delete("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.DeleteShopMenu(db, c) })
+	//admin update and delete
+	app.Put("/social/:id", func(c *fiber.Ctx) error { return controller.UpdateSocialMedia(db, c) })
+	app.Delete("/social/:id", func(c *fiber.Ctx) error { return controller.DeleteSocialMedia(db, c) })
+	app.Post("/shoptime", func(c *fiber.Ctx) error { return controller.CreateShopOpenDate(db, c) })
+	app.Put("/shoptime/:id", func(c *fiber.Ctx) error { return controller.UpdateShopOpenDate(db, c) })
+	app.Delete("/shoptime/:id", func(c *fiber.Ctx) error { return controller.DeleteShopOpenDate(db, c) })
+
+	
 	app.Get("/menubin", func(c *fiber.Ctx) error { return controller.GetBinMenus(db, c) })
 	app.Get("/menubin/:id", func(c *fiber.Ctx) error { return controller.GetBinMenuByID(db, c) })
 	app.Get("/menubin/temp/:temp_id", func(c *fiber.Ctx) error { return controller.GetBinMenuByTempID(db, c) })
@@ -243,8 +250,7 @@ func main() {
 	app.Delete("/menubin/:id", func(c *fiber.Ctx) error { return controller.DeleteBinMenu(db, c) })
 	app.Delete("/menubin/temp/:temp_id", func(c *fiber.Ctx) error { return controller.DeleteBinMenuByTempID(db, c) }) // 🔥 Delete by TempID
 
-	//entrepreneur delete photo
-	app.Post("/photobin", func(c *fiber.Ctx) error { return controller.CreateBinPhoto(db, c) })
+
 	//nothing usefull this for test
 	app.Get("/photobin", func(c *fiber.Ctx) error { return controller.GetBinPhotos(db, c) })
 	app.Get("/photobin/:id", func(c *fiber.Ctx) error { return controller.GetBinPhotoByID(db, c) })
@@ -253,8 +259,9 @@ func main() {
 	app.Delete("/photobin/:id", func(c *fiber.Ctx) error { return controller.DeleteBinPhoto(db, c) })
 	app.Delete("/photobin/temp/:temp_id", func(c *fiber.Ctx) error { return controller.DeleteBinPhotoByTempID(db, c) }) // 🔥 Delete by TempID
 	
-	//entrepreneur delete social
-	app.Post("/socialbin", func(c *fiber.Ctx) error { return controller.CreateBinSocial(db, c) })
+
+	//Bin
+	// Bin routes
 	app.Get("/socialbin", func(c *fiber.Ctx) error { return controller.GetBinSocials(db, c) })
 	app.Get("/socialbin/:id", func(c *fiber.Ctx) error { return controller.GetBinSocialByID(db, c) })
 	app.Get("/socialbin/temp/:temp_id", func(c *fiber.Ctx) error { return controller.GetBinSocialByTempID(db, c) })

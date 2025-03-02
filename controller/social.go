@@ -57,41 +57,97 @@ func GetSocialMediaByShopID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(socialMedias)
 }
-
-// UpdateSocialMedia updates a SocialMedia entry by ID
+// UpdateSocialMedia updates a SocialMedia entry by ID and also updates the TempSocial entry
 func UpdateSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
 	var socialMedia model.SocialMedia
+
+	// Retrieve the existing SocialMedia entry by ID
 	if err := db.First(&socialMedia, id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Social media not found",
 		})
 	}
 
+	// Parse the request body into the SocialMedia struct
 	if err := c.BodyParser(&socialMedia); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
 
+	// Update the SocialMedia entry
 	if err := db.Save(&socialMedia).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update social media",
 		})
 	}
-	return c.JSON(socialMedia)
+
+	// Now update or create the corresponding TempSocial entry
+	var tempSocial model.TempSocial
+	// Check if a TempSocial exists for this SocialMedia
+	if err := db.Where("social_id = ?", socialMedia.ID).First(&tempSocial).Error; err != nil {
+		// If TempSocial doesn't exist, create a new entry
+		tempSocial = model.TempSocial{
+			SocialID: socialMedia.ID,
+			Name:     socialMedia.Name,
+			Platform: socialMedia.Platform,
+			Link:     socialMedia.Link,
+		}
+		if err := db.Create(&tempSocial).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create TempSocial",
+			})
+		}
+	} else {
+		// If TempSocial exists, update it
+		tempSocial.Name = socialMedia.Name
+		tempSocial.Platform = socialMedia.Platform
+		tempSocial.Link = socialMedia.Link
+		if err := db.Save(&tempSocial).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to update TempSocial",
+			})
+		}
+	}
+
+	// Return the updated SocialMedia and TempSocial as JSON
+	return c.JSON(fiber.Map{
+		"social_media": socialMedia,
+		"temp_social":  tempSocial,
+	})
 }
 
-// DeleteSocialMedia deletes a SocialMedia entry by ID
+
+// DeleteSocialMedia deletes a SocialMedia entry and its related TempSocial entry
 func DeleteSocialMedia(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
-	if err := db.Delete(&model.SocialMedia{}, id).Error; err != nil {
+
+	// Begin a transaction to ensure atomicity
+	tx := db.Begin()
+
+	// Delete TempSocial entries related to the SocialMedia entry
+	if err := tx.Where("social_id = ?", id).Delete(&model.TempSocial{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete associated TempSocial",
+		})
+	}
+
+	// Delete the SocialMedia entry
+	if err := tx.Delete(&model.SocialMedia{}, id).Error; err != nil {
+		tx.Rollback()
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete social media",
 		})
 	}
+
+	// Commit the transaction
+	tx.Commit()
+
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
 func CreateSocialWithTemp(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
     social := new(model.SocialMedia)
     
