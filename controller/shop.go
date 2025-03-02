@@ -335,6 +335,7 @@ func getSocialMedia(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 	for _, social := range socialMedias {
 		result = append(result, fiber.Map{
 			"id":        social.ID,
+			"name":		social.Name,
 			"platform":  social.Platform,
 			"link":      social.Link,
 			"is_public": social.IsPublic,
