@@ -264,7 +264,7 @@ func DeleteContactToAdmin(db *gorm.DB, c *fiber.Ctx) error {
 func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 	var tempShops []model.TempShop
 
-	// Fetch all TempShop entries where status is "waiting"
+	// Fetch all TempShop entries where status is "Waiting"
 	if err := db.Where("status = ?", "Waiting").
 		Find(&tempShops).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -298,14 +298,18 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 			})
 		}
 
-		// Fetch photo info
-		tempPhotos, err := getPhotoForTempByShopID(db, shopID)
+		// Fetch shop photos and menu photos separately
+		photoData, err := getPhotoForTempByShopID(db, shopID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error":   "Failed to retrieve photo data",
 				"details": err.Error(),
 			})
 		}
+
+		// Extract separate lists for shop photos and menu photos
+		photosShop, _ := photoData["photos_shop"].([]fiber.Map)
+		photosMenu, _ := photoData["photos_menu"].([]fiber.Map)
 
 		// Fetch shop open time info
 		tempTimes, err := GetTempTimeByShopID(db, shopID)
@@ -335,17 +339,18 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 		deleteTime, _ := tempTimes["deleteTime"].([]fiber.Map)
 
 		tempShopResponses = append(tempShopResponses, fiber.Map{
-			"id":             tempShop.TempID,
-			"name":           tempShop.Name,
-			"shop_id":        shopID,
-			"deleteSocials":  deleteSocials,
-			"socials":        socials,
-			"menus":          tempMenus,   // Include menus in the response
-			"photos":         tempPhotos,  // Include photos in the response
-			"addTime":        addTime,     // Include added times
-			"editTime":       editTime,    // Include edited times
-			"deleteTime":     deleteTime,  // Include deleted times
-			"time":      	  shopOpenDates, // Include shop open dates
+			"id":            tempShop.TempID,
+			"name":          tempShop.Name,
+			"shop_id":       shopID,
+			"deleteSocials": deleteSocials,
+			"socials":       socials,
+			"menus":         tempMenus,  // Include menus in the response
+			"photos_shop":   photosShop, // Photos directly related to the shop
+			"photos_menu":   photosMenu, // Photos linked to menus
+			"addTime":       addTime,    // Include added times
+			"editTime":      editTime,   // Include edited times
+			"deleteTime":    deleteTime, // Include deleted times
+			"time":          shopOpenDates, // Include shop open dates
 		})
 	}
 
@@ -472,33 +477,57 @@ func getPhotoForTempByMenuID(db *gorm.DB, menuID uint) ([]fiber.Map, error) {
 	return result, nil
 }
 
-
-func getPhotoForTempByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
-	var photos []model.Photo
+func getPhotoForTempByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
+	var photosShop []model.Photo
+	var photosMenu []model.Photo
 
 	// Subquery to get PhotoIDs that exist in DeletePhoto
 	subQuery := db.Table("delete_photos").Select("photo_id")
 
-	// Query photos based on the condition
+	// Fetch photos that belong to the shop (excluding deleted ones)
 	if err := db.Where("(is_public = ? AND id NOT IN (?)) OR is_public = ?", true, subQuery, false).
 		Where("shop_id = ?", shopID).
-		Find(&photos).Error; err != nil {
+		Find(&photosShop).Error; err != nil {
 		return nil, err
 	}
 
-	// Convert results to fiber.Map
-	result := make([]fiber.Map, len(photos))
-	for i, photo := range photos {
-		result[i] = fiber.Map{
-			"id":        photo.ID,
-			"path_file": photo.PathFile,
-			"shop_id":   photo.ShopID,
-			"is_public": photo.IsPublic,
+	// Get menu IDs that belong to the given shop
+	var menuIDs []uint
+	if err := db.Table("shop_menus").Where("shop_id = ?", shopID).Pluck("id", &menuIDs).Error; err != nil {
+		return nil, err
+	}
+
+	// Fetch photos that belong to those menu IDs (excluding deleted ones)
+	if len(menuIDs) > 0 {
+		if err := db.Where("(is_public = ? AND id NOT IN (?)) OR is_public = ?", true, subQuery, false).
+			Where("menu_id IN (?)", menuIDs).
+			Find(&photosMenu).Error; err != nil {
+			return nil, err
 		}
 	}
 
-	return result, nil
+	// Convert results to fiber.Map
+	convertPhotos := func(photos []model.Photo) []fiber.Map {
+		result := make([]fiber.Map, len(photos))
+		for i, photo := range photos {
+			result[i] = fiber.Map{
+				"id":        photo.ID,
+				"path_file": photo.PathFile,
+				"shop_id":   photo.ShopID,
+				"menu_id":   photo.MenuID,
+				"is_public": photo.IsPublic,
+			}
+		}
+		return result
+	}
+
+	// Return structured response
+	return fiber.Map{
+		"photos_shop": convertPhotos(photosShop), // Photos with shop_id
+		"photos_menu": convertPhotos(photosMenu), // Photos linked to menus
+	}, nil
 }
+
 
 func GetTempTimeByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
 	var addTime []model.TempShopOpenDate
