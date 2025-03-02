@@ -89,3 +89,20 @@ func Login(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
 }
+
+// GetEntrepreneurWithPassword fetches entrepreneur details including the hashed password
+func GetEntrepreneurWithPassword(db *gorm.DB, c *fiber.Ctx) error {
+	username := c.Params("username") // Get username from URL params
+
+	var entrepreneur model.Entrepreneur
+	if err := db.Where("username = ?", username).First(&entrepreneur).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Entrepreneur not found"})
+	}
+
+	// WARNING: Returning hashed passwords is a security risk!
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"username": entrepreneur.Username,
+		"password": entrepreneur.Password, // Hashed password
+		"message":  "Entrepreneur found",
+	})
+}

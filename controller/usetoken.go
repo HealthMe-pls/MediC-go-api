@@ -13,77 +13,65 @@ func GetShopDetailsByLoggedInEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
     tokenString := c.Get("Authorization")
     if tokenString == "" {
         fmt.Println("Missing token")
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "error": "Missing token",
-        })
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
     }
-    
-    // Remove the "Bearer " prefix
+
+    // Remove "Bearer " prefix if present
     if len(tokenString) > len("Bearer ") && tokenString[:len("Bearer ")] == "Bearer " {
         tokenString = tokenString[len("Bearer "):]
     } else {
         fmt.Println("Invalid token format")
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "error": "Invalid token format",
-        })
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token format"})
     }
 
     // Parse and validate the token
     token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-        // Ensure the token is signed with HMAC algorithm (or your preferred algorithm)
         if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
             fmt.Println("Unexpected signing method")
             return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
         }
-        // Return the secret key used for signing the token
         return []byte("your_secret_key"), nil
     })
-    
-    // Token parsing and validation
-    if err != nil {
-        fmt.Println("Error parsing token:", err)
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "error": "Invalid or expired token",
-        })
-    }
-    if !token.Valid {
-        fmt.Println("Token is invalid or expired")
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "error": "Invalid or expired token",
-        })
+
+    if err != nil || !token.Valid {
+        fmt.Println("Invalid or expired token:", err)
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid or expired token"})
     }
 
-    // Extract the EntrepreneurID from the token claims
+    // Extract entrepreneur name from token
     claims, ok := token.Claims.(jwt.MapClaims)
     if !ok {
         fmt.Println("Invalid token claims")
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "error": "Invalid token claims",
-        })
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token claims"})
     }
 
-    entrepreneurID, ok := claims["entrepreneur_id"].(float64) // type assertion to float64
+    entrepreneurName, ok := claims["username"].(string)
     if !ok {
-        fmt.Println("Entrepreneur ID not found in token")
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "error": "Entrepreneur ID missing in token",
-        })
+        fmt.Println("Entrepreneur name not found in token")
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Entrepreneur name missing in token"})
     }
 
-    // Log the extracted entrepreneur ID
-    fmt.Println("Entrepreneur ID: ", entrepreneurID)
+    // Log the extracted entrepreneur name
+    fmt.Println("Entrepreneur Name: ", entrepreneurName)
 
-    // Fetch all shops belonging to the logged-in entrepreneur
+    // Find entrepreneur by name
+    var entrepreneur model.Entrepreneur
+    if err := db.Where("username = ?", entrepreneurName).First(&entrepreneur).Error; err != nil {
+        fmt.Println("Entrepreneur not found:", err)
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Entrepreneur not found"})
+    }
+
+    // Log found entrepreneur ID
+    fmt.Println("Entrepreneur ID: ", entrepreneur.ID)
+
+    // Fetch all shops belonging to this entrepreneur
     var shops []model.Shop
     if err := db.Preload("Entrepreneur").
         Preload("ShopCategory").
-        Where("entrepreneur_id = ?", uint(entrepreneurID)).
+        Where("entrepreneur_id = ?", entrepreneur.ID).
         Find(&shops).Error; err != nil {
         fmt.Println("Failed to retrieve shops:", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error":   "Failed to retrieve shops",
-            "details": err.Error(),
-        })
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve shops", "details": err.Error()})
     }
 
     // If no shops found, return an empty array
@@ -92,44 +80,15 @@ func GetShopDetailsByLoggedInEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
         return c.JSON([]fiber.Map{})
     }
 
-    // Prepare the response array
+    // Prepare response array
     var shopResponses []fiber.Map
-
-    // Iterate over each shop to fetch related data
     for _, shop := range shops {
-        shopOpenDates, err := getShopOpenDates(db, shop.ID)
-        if err != nil {
-            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-                "error":   "Failed to retrieve shop open dates",
-                "details": err.Error(),
-            })
-        }
+        shopOpenDates, _ := getShopOpenDates(db, shop.ID)
+        shopMenus, _ := getShopMenus(db, shop.ID)
+        socialMedias, _ := getSocialMedia(db, shop.ID)
+        shopPhotos, _ := getPhotosByShopID(db, shop.ID)
 
-        shopMenus, err := getShopMenus(db, shop.ID)
-        if err != nil {
-            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-                "error":   "Failed to retrieve shop menus",
-                "details": err.Error(),
-            })
-        }
-
-        socialMedias, err := getSocialMedia(db, shop.ID)
-        if err != nil {
-            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-                "error":   "Failed to retrieve social media",
-                "details": err.Error(),
-            })
-        }
-
-        shopPhotos, err := getPhotosByShopID(db, shop.ID)
-        if err != nil {
-            return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-                "error":   "Failed to retrieve shop photos",
-                "details": err.Error(),
-            })
-        }
-
-        // Construct the individual shop response
+        // Construct response object
         shopResponse := fiber.Map{
             "shop_id":         shop.ID,
             "name":            shop.Name,
@@ -143,12 +102,9 @@ func GetShopDetailsByLoggedInEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
             "menus":           shopMenus,
             "social_media":    socialMedias,
         }
-
-        // Append to the response array
         shopResponses = append(shopResponses, shopResponse)
     }
 
-    // Return the shop details as a response
     return c.JSON(shopResponses)
 }
 
