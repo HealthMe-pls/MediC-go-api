@@ -56,10 +56,11 @@ func GetShopMenuByShopID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(shopMenus)
 }
-
-// UpdateShopMenu updates a ShopMenu entry by ID
+// UpdateShopMenu updates a ShopMenu entry and its corresponding TempMenu entry
 func UpdateShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
+
+	// Find the existing ShopMenu
 	var shopMenu model.ShopMenu
 	if err := db.First(&shopMenu, id).Error; err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -67,30 +68,74 @@ func UpdateShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
+	// Parse the request body
 	if err := c.BodyParser(&shopMenu); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
 
-	if err := db.Save(&shopMenu).Error; err != nil {
+	// Begin transaction to update both tables
+	tx := db.Begin()
+
+	// Update the ShopMenu entry
+	if err := tx.Save(&shopMenu).Error; err != nil {
+		tx.Rollback()
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update shop menu",
 		})
 	}
+
+	// Check if a TempMenu exists for this menu ID
+	var tempMenu model.TempMenu
+	if err := tx.Where("menu_id = ?", shopMenu.ID).First(&tempMenu).Error; err == nil {
+		// Update TempMenu if it exists
+		tempMenu.ProductDescription = shopMenu.ProductDescription
+		tempMenu.Price = shopMenu.Price
+		tempMenu.ProductName = shopMenu.ProductName
+
+		if err := tx.Save(&tempMenu).Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to update temp menu",
+			})
+		}
+	}
+
+	// Commit the transaction
+	tx.Commit()
+
 	return c.JSON(shopMenu)
 }
-
-// DeleteShopMenu deletes a ShopMenu entry by ID
+// DeleteShopMenu deletes a ShopMenu entry and its corresponding TempMenu entry
 func DeleteShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
-	if err := db.Delete(&model.ShopMenu{}, id).Error; err != nil {
+
+	// Begin a transaction to ensure atomicity
+	tx := db.Begin()
+
+	// Delete the corresponding TempMenu entry
+	if err := tx.Where("menu_id = ?", id).Delete(&model.TempMenu{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete associated TempMenu",
+		})
+	}
+
+	// Delete the ShopMenu entry
+	if err := tx.Delete(&model.ShopMenu{}, id).Error; err != nil {
+		tx.Rollback()
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete shop menu",
 		})
 	}
+
+	// Commit the transaction
+	tx.Commit()
+
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
 
 func CreateMenuWithTemp(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 	menu := new(model.ShopMenu)
