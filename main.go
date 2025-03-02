@@ -281,6 +281,18 @@ func main() {
 	//how to use search-shops?keyword=coffee
 	app.Get("/search-shops", func(c *fiber.Ctx) error { return controller.SearchShopsByKeyword(db, c) })
 
+	// Define Routes
+	app.Post("/register", func(c *fiber.Ctx) error {
+		return controller.Register(db, c)
+	})
+
+	app.Post("/login", func(c *fiber.Ctx) error {
+		return controller.Login(db, c)
+	})
+	app.Get("/shopLogin", func(c *fiber.Ctx) error {
+        return controller.GetShopDetailsByLoggedInEntrepreneur(db, c)
+    })
+
 	app.Get("/config", getENV)
 
 	app.Listen(":8080")

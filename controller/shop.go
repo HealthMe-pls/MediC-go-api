@@ -3,8 +3,6 @@ package controller
 import (
 	"fmt"
 	"strconv"
-
-	// "github.com/HealthMe-pls/medic-go-api/controller"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -195,90 +193,6 @@ func GetShopDetailByID(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	return c.JSON(shopResponse)
-}
-func GetShopDetailsByEntrepreneurID(db *gorm.DB, c *fiber.Ctx) error {
-	// Parse Entrepreneur ID from request parameters
-	entrepreneurID, err := strconv.ParseUint(c.Params("entrepreneur_id"), 10, 64)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid entrepreneur ID",
-		})
-	}
-
-	// Fetch all shops belonging to the entrepreneur
-	var shops []model.Shop
-	if err := db.Preload("Entrepreneur").
-		Preload("ShopCategory").
-		Where("entrepreneur_id = ?", entrepreneurID).
-		Find(&shops).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to retrieve shops",
-			"details": err.Error(),
-		})
-	}
-
-	// If no shops found, return an empty array
-	if len(shops) == 0 {
-		return c.JSON([]fiber.Map{})
-	}
-
-	// Prepare response array
-	var shopResponses []fiber.Map
-
-	// Iterate over each shop to fetch related data
-	for _, shop := range shops {
-		shopOpenDates, err := getShopOpenDates(db, shop.ID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error":   "Failed to retrieve shop open dates",
-				"details": err.Error(),
-			})
-		}
-
-		shopMenus, err := getShopMenus(db, shop.ID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error":   "Failed to retrieve shop menus",
-				"details": err.Error(),
-			})
-		}
-
-		socialMedias, err := getSocialMedia(db, shop.ID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error":   "Failed to retrieve social media",
-				"details": err.Error(),
-			})
-		}
-
-		shopPhotos, err := getPhotosByShopID(db, shop.ID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error":   "Failed to retrieve shop photos",
-				"details": err.Error(),
-			})
-		}
-
-		// Construct individual shop response
-		shopResponse := fiber.Map{
-			"shop_id":         shop.ID,
-			"name":            shop.Name,
-			"entrepreneur_id": shop.Entrepreneur.ID,
-			"category_id":     shop.ShopCategory.ID,
-			"category":        shop.ShopCategory.Name,
-			"open_status":     shop.OpenStatus,
-			"description":     shop.Description,
-			"photos":          shopPhotos,
-			"shop_open_dates": shopOpenDates,
-			"menus":           shopMenus,
-			"social_media":    socialMedias,
-		}
-
-		// Append to response array
-		shopResponses = append(shopResponses, shopResponse)
-	}
-
-	return c.JSON(shopResponses)
 }
 
 func getShopOpenDates(db *gorm.DB, shopID uint) ([]fiber.Map, error) {

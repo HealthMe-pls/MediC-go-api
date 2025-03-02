@@ -26,52 +26,6 @@ func CreateShopMenuByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(shopMenu)
 }
 
-func CreateMenuByEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
-	entrepreneurID := c.Params("entrepreneur_id")
-	shopID := c.Params("shop_id")
-
-	// Check if the entrepreneur exists
-	var entrepreneur model.Entrepreneur
-	if err := db.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   "Entrepreneur not found",
-			"details": err.Error(),
-		})
-	}
-
-	// Check if the shop exists and belongs to the entrepreneur
-	var shop model.Shop
-	if err := db.First(&shop, "id = ? AND entrepreneur_id = ?", shopID, entrepreneurID).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   "Shop not found or does not belong to the entrepreneur",
-			"details": err.Error(),
-		})
-	}
-
-	// Parse request body
-	var menu model.ShopMenu
-	if err := c.BodyParser(&menu); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Failed to parse request body",
-			"details": err.Error(),
-		})
-	}
-
-	// Ensure IsPublic is set to false and assign Shop ID
-	menu.IsPublic = false
-	menu.ShopID = shop.ID
-
-	// Save the shop menu
-	if err := db.Create(&menu).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to create shop menu",
-			"details": err.Error(),
-		})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(menu)
-}
-
 // GetShopMenu retrieves a ShopMenu entry by ID
 func GetShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -149,7 +103,15 @@ func CreateMenuWithTemp(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 
 	// Assign isPublic from function parameter
 	menu.IsPublic = isPublic
-
+    // Find TempShop that has the same ShopID as the social media
+    var tempShop model.TempShop
+    if err := db.Where("shop_id = ?", menu.ShopID).First(&tempShop).Error; err != nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+            "error":   "TempShop not found for this ShopID",
+            "details": err.Error(),
+        })
+    }
+	menu.TempID = &tempShop.TempID
 	// Save the menu in ShopMenu table
 	if result := db.Create(&menu); result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -158,19 +120,10 @@ func CreateMenuWithTemp(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 		})
 	}
 
-	// Ensure TempID is not nil before dereferencing
-	var tempID uint
-	if menu.TempID != nil {
-		tempID = *menu.TempID
-	} else {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "TempID is required",
-		})
-	}
 
 	// Create a corresponding TempMenu entry
 	tempMenu := model.TempMenu{
-		TempID:             tempID,
+		TempID:             tempShop.TempID,
 		MenuID:             menu.ID,
 		ProductName:        menu.ProductName,
 		ProductDescription: menu.ProductDescription,
