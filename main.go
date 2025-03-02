@@ -62,6 +62,7 @@ func main() {
 
 	// Static file serving to access uploaded images via /upload/{filename}
 	app.Static("/upload", "./uploads")
+	
 
 	// Apply CORS middleware
 	app.Use(cors.New(cors.Config{
@@ -90,6 +91,8 @@ func main() {
 	app.Post("/patient/:id/images", func(c *fiber.Ctx) error { return controller.UploadImage(db, c) })
 	app.Get("/patient/:id/images", func(c *fiber.Ctx) error { return controller.GetPatientImages(db, c) })
 
+
+	
 	//admin --check
 	app.Get("/admin", func(c *fiber.Ctx) error { return controller.GetAdmins(db, c) })
 	app.Get("/admin/:id", func(c *fiber.Ctx) error { return controller.GetAdminByUsername(db, c) })

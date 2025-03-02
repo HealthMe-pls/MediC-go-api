@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"strconv"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -46,52 +47,6 @@ func GetPhotoByMenuID(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 	return c.JSON(photos)
-}
-
-func CreatePhotoByEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
-	entrepreneurID := c.Params("entrepreneur_id")
-	shopID := c.Params("shop_id")
-
-	// Check if the entrepreneur exists
-	var entrepreneur model.Entrepreneur
-	if err := db.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   "Entrepreneur not found",
-			"details": err.Error(),
-		})
-	}
-
-	// Check if the shop exists and belongs to the entrepreneur
-	var shop model.Shop
-	if err := db.First(&shop, "id = ? AND entrepreneur_id = ?", shopID, entrepreneurID).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   "Shop not found or does not belong to the entrepreneur",
-			"details": err.Error(),
-		})
-	}
-
-	// Parse request body
-	var photo model.Photo
-	if err := c.BodyParser(&photo); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   "Failed to parse request body",
-			"details": err.Error(),
-		})
-	}
-
-	// Ensure IsPublic is set to false and assign Shop ID
-	photo.IsPublic = false
-	photo.ShopID = &shop.ID
-
-	// Save the photo
-	if err := db.Create(&photo).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to create photo",
-			"details": err.Error(),
-		})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(photo)
 }
 
 
@@ -153,6 +108,18 @@ func CreatePhotoByMenuID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 	}
 	unitMenuID := uint(menuID)
 	// Parse request body into the Photo struct
+	// Read file from request
+	file, err := c.FormFile("image")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Failed to read image")
+	}
+	
+	// Save the file to the server
+	filePath := fmt.Sprintf("./uploads/%s", file.Filename)
+	fileName := file.Filename
+	if err := c.SaveFile(file, filePath); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save image")
+	}
 	photo := new(model.Photo)
 	if err := c.BodyParser(photo); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -160,7 +127,7 @@ func CreatePhotoByMenuID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 			"details": err.Error(),
 		})
 	}
-
+	photo.PathFile = fileName
 	// Set IsPublic to false and assign MenuID
 	photo.IsPublic = isPublic
 	photo.MenuID = &unitMenuID // Convert menuID to uint
@@ -188,6 +155,17 @@ func CreatePhotoByShopID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 		})
 	}
 	unitShopId := uint(shopID) 
+	file, err := c.FormFile("image")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Failed to read image")
+	}
+	
+	// Save the file to the server
+	filePath := fmt.Sprintf("./uploads/%s", file.Filename)
+	fileName := file.Filename
+	if err := c.SaveFile(file, filePath); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save image")
+	}
 	// Parse request body into the Photo struct
 	photo := new(model.Photo)
 	if err := c.BodyParser(photo); err != nil {
@@ -198,6 +176,7 @@ func CreatePhotoByShopID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 	}
 
 	// Set IsPublic to false and assign ShopID
+	photo.PathFile = fileName
 	photo.IsPublic = isPublic
 	photo.ShopID = &unitShopId // Convert shopID to uint
 
@@ -225,6 +204,18 @@ func CreatePhotoByWorkshopID(db *gorm.DB, c *fiber.Ctx) error {
 
 	// Convert workshopID from int to uint
 	uintWorkshopID := uint(workshopID)
+	// Read file from request
+	file, err := c.FormFile("image")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("Failed to read image")
+	}
+	
+	// Save the file to the server
+	filePath := fmt.Sprintf("./uploads/%s", file.Filename)
+	fileName := file.Filename
+	if err := c.SaveFile(file, filePath); err != nil {
+		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save image")
+	}
 
 	// Parse request body into the Photo struct
 	photo := new(model.Photo)
@@ -236,6 +227,7 @@ func CreatePhotoByWorkshopID(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	// Set IsPublic to true
+	photo.PathFile = fileName
 	photo.IsPublic = true
 	photo.WorkshopID = &uintWorkshopID // Assign pointer to uint
 
