@@ -101,8 +101,8 @@ func main() {
 	app.Delete("/admin/:id", func(c *fiber.Ctx) error { return controller.DeleteAdmin(db, c) })
 
 	//entrepreneur
-	app.Get("/entrepreneur", func(c *fiber.Ctx) error { return controller.GetEntrepreneur(db, c) })
-	// app.Get("/entrepreneur", func(c *fiber.Ctx) error { return controller.GetEntrepreneurWithPassword(db, c) })
+	// app.Get("/entrepreneur", func(c *fiber.Ctx) error { return controller.GetEntrepreneur(db, c) })
+	app.Get("/entrepreneur", func(c *fiber.Ctx) error { return controller.GetAllEntrepreneur(db, c) })
 
 	app.Get("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.GetEntrepreneurByID(db, c) })
 	app.Post("/entrepreneur", func(c *fiber.Ctx) error { return controller.CreateEntrepreneur(db, c) })
