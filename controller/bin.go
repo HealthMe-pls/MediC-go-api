@@ -1,7 +1,8 @@
 package controller
 
 import (
-
+	"fmt"
+	"os"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -178,32 +179,51 @@ func DeleteBinPhoto(db *gorm.DB, c *fiber.Ctx) error {
 // 	}
 // 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all photos for TempID"})
 // }
+// DeleteBinPhotoByTempID deletes photos based on TempID from both the database and the uploads folder
 func DeleteBinPhotoByTempID(db *gorm.DB, c *fiber.Ctx) error {
 	tempID := c.Params("id")
 
-	// Fetch all the delete photo entries for the given temp_id
+	// Fetch all deletePhoto records matching the tempID
 	var deletePhotos []model.DeletePhoto
 	if err := db.Where("temp_id = ?", tempID).Find(&deletePhotos).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch delete photos"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch delete photo records"})
 	}
 
-	// Extract the photo IDs to delete from the Photos table
-	photoIDs := make([]uint, len(deletePhotos))
-	for i, photo := range deletePhotos {
-		photoIDs[i] = photo.PhotoID
+	// Extract photo IDs from DeletePhoto table
+	var photoIDs []uint
+	for _, deletePhoto := range deletePhotos {
+		photoIDs = append(photoIDs, deletePhoto.PhotoID)
 	}
 
-	// Delete Photo entries where IDs match the extracted photo IDs
+	if len(photoIDs) == 0 {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "No photos found for given TempID"})
+	}
+
+	// Fetch photos from the Photo table based on extracted photo IDs
+	var photos []model.Photo
+	if err := db.Where("id IN ?", photoIDs).Find(&photos).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch photos from Photo table"})
+	}
+
+	// Delete files from the uploads folder
+	for _, photo := range photos {
+		filePath := fmt.Sprintf("./uploads/%s", photo.PathFile)
+		if err := os.Remove(filePath); err != nil {
+			fmt.Println("Error deleting file:", err) // Log error but continue deletion process
+		}
+	}
+
+	// Delete photo records from the Photo table
 	if err := db.Where("id IN ?", photoIDs).Delete(&model.Photo{}).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete photos"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete photos from database"})
 	}
 
-	// Delete the DeletePhoto entries
-	// if err := db.Where("temp_id = ?", tempID).Delete(&model.DeletePhoto{}).Error; err != nil {
-	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete photos by TempID"})
-	// }
+	// Optionally delete entries from DeletePhoto table as well
+	if err := db.Where("temp_id = ?", tempID).Delete(&model.DeletePhoto{}).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete delete-photo records"})
+	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all photos for TempID"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all photos for TempID successfully"})
 }
 
 // ==================== SOCIAL BIN ====================

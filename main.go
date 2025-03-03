@@ -241,6 +241,9 @@ func main() {
 	app.Post("/shoptime", func(c *fiber.Ctx) error { return controller.CreateShopOpenDate(db, c) })
 	app.Put("/shoptime/:id", func(c *fiber.Ctx) error { return controller.UpdateShopOpenDate(db, c) })
 	app.Delete("/shoptime/:id", func(c *fiber.Ctx) error { return controller.DeleteShopOpenDate(db, c) })
+	app.Delete("/uploadphotos/:id", func(c *fiber.Ctx) error {
+		return controller.DeletePhotoByID(db, c)
+	})
 
 	
 	app.Get("/menubin", func(c *fiber.Ctx) error { return controller.GetBinMenus(db, c) })
