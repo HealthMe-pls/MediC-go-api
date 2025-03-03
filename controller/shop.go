@@ -2,6 +2,8 @@ package controller
 
 import (
 	"fmt"
+	"strings"
+	"log"
 	"strconv"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -551,4 +553,45 @@ func DeleteShopCategory(db *gorm.DB, c *fiber.Ctx) error {
 
 	// Return success message
 	return c.SendString("ShopCategory deleted successfully")
+}
+
+
+// SearchShopsidByshopname will search for a single shop by name and return only id and name
+func SearchShopsidByshopname(db *gorm.DB, c *fiber.Ctx) error {
+	// Get the query parameter `shopidkeyword` and trim any extra spaces
+	shopNameKeyword := strings.TrimSpace(c.Query("shopidkeyword"))
+	if shopNameKeyword == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "shopidkeyword is required",
+		})
+	}
+
+	// Query the database using Raw SQL to avoid issues with WHERE clause
+	var shop struct {
+		ID   uint   `json:"id"`
+		Name string `json:"name"`
+	}
+
+	// Use db.Raw to write a more explicit query (without LOWER for case-sensitive search)
+	query := "SELECT id, name FROM shops WHERE name = ? LIMIT 1"
+	err := db.Raw(query, shopNameKeyword).Scan(&shop).Error
+	if err != nil {
+		// Log the error details for debugging
+		log.Println("Error querying shop:", err)
+
+		// Handle specific database errors
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"message": "Shop not found with the name: " + shopNameKeyword,
+			})
+		}
+
+		// Return a generic error with detailed info
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// Return the found shop (only ID and Name) as JSON
+	return c.JSON(shop)
 }

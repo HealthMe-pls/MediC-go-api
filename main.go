@@ -135,6 +135,8 @@ func main() {
 	app.Get("/shopdetail", func(c *fiber.Ctx) error { return controller.GetShopDetail(db, c) })
 	app.Get("/shopdetail/:id", func(c *fiber.Ctx) error { return controller.GetShopDetailByID(db, c) })
 	app.Get("/entrepreneur/shopdetail/:entrepreneur_id", func(c *fiber.Ctx) error { return controller.GetShopDetailsByEntrepreneurID(db, c) })
+	//how to use shopid?shopidkeyword=Cotton Farm
+	app.Get("/shopid", func(c *fiber.Ctx) error {return controller.SearchShopsidByshopname(db, c)})
 
 	app.Get("/shop", func(c *fiber.Ctx) error { return controller.GetShops(db, c) })
 	app.Put("/admin/shop/:id", func(c *fiber.Ctx) error { return controller.UpdateShopByAdmin(db, c) })
