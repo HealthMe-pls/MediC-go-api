@@ -1,13 +1,14 @@
 package controller
 
 import (
-	"strconv"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
-
 
 // shop menu
 // CreateShopMenu creates a new ShopMenu entry
@@ -107,34 +108,52 @@ func UpdateShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(shopMenu)
 }
-// DeleteShopMenu deletes a ShopMenu entry and its corresponding TempMenu entry
-func DeleteShopMenu(db *gorm.DB, c *fiber.Ctx) error {
+func DeleteShopMenu(tx *gorm.DB, c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	// Begin a transaction to ensure atomicity
-	tx := db.Begin()
+	// Step 1: Check if there are photos linked to the menu
+	var photos []model.Photo
+	if err := tx.Where("menu_id = ?", id).Find(&photos).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to check associated photos",
+		})
+	}
 
-	// Delete the corresponding TempMenu entry
+	// Step 2: Delete associated photos
+	for _, photo := range photos {
+		filePath := fmt.Sprintf("./uploads/%s", photo.PathFile)
+
+		// Try deleting the file, log an error if it fails but continue
+		if err := os.Remove(filePath); err != nil {
+			fmt.Println("Error deleting file:", err)
+		}
+
+		// Delete photo from DB
+		if err := tx.Delete(&photo).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to delete associated photo from database",
+			})
+		}
+	}
+
+	// Step 3: Delete the corresponding TempMenu entry
 	if err := tx.Where("menu_id = ?", id).Delete(&model.TempMenu{}).Error; err != nil {
-		tx.Rollback()
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete associated TempMenu",
 		})
 	}
 
-	// Delete the ShopMenu entry
-	if err := tx.Delete(&model.ShopMenu{}, id).Error; err != nil {
-		tx.Rollback()
+	// Step 4: Delete the ShopMenu entry
+	if err := tx.Where("id = ?", id).Delete(&model.ShopMenu{}).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to delete shop menu",
 		})
 	}
 
-	// Commit the transaction
-	tx.Commit()
-
-	return c.SendStatus(fiber.StatusNoContent)
+	// No need to commit or rollback here (handled in the main function)
+	return nil
 }
+
 
 
 func CreateMenuWithTemp(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {

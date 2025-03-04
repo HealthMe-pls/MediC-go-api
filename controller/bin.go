@@ -75,40 +75,50 @@ func DeleteBinMenu(db *gorm.DB, c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "Deleted menu bin entry removed"})
 }
 
-// func DeleteBinMenuByTempID(db *gorm.DB, c *fiber.Ctx) error {
-// 	tempID := c.Params("temp_id")
-// 	if err := db.Where("temp_id = ?", tempID).Delete(&model.DeleteMenu{}).Error; err != nil {
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete menus by TempID"})
-// 	}
-// 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all menus for TempID"})
-// }
 func DeleteBinMenuByTempID(db *gorm.DB, c *fiber.Ctx) error {
 	tempID := c.Params("id")
 
+	// Begin a transaction
+	tx := db.Begin()
+
 	// Fetch all the delete menu entries for the given temp_id
 	var deleteMenus []model.DeleteMenu
-	if err := db.Where("temp_id = ?", tempID).Find(&deleteMenus).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch delete menus"})
+	if err := tx.Where("temp_id = ?", tempID).Find(&deleteMenus).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch delete menus",
+		})
 	}
 
-	// Extract the menu IDs to delete from ShopMenu table
-	menuIDs := make([]uint, len(deleteMenus))
-	for i, menu := range deleteMenus {
-		menuIDs[i] = menu.MenuID
+	// Delete each menu using DeleteShopMenu
+	for _, deleteMenu := range deleteMenus {
+		menuID := fmt.Sprintf("%d", deleteMenu.MenuID)
+
+		// Create a new Fiber context for the menu
+		menuCtx := *c
+		menuCtx.Set("id", menuID)
+
+		// Call DeleteShopMenu with the same transaction
+		if err := DeleteShopMenu(tx, &menuCtx); err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
-	// Delete ShopMenu entries where IDs match the extracted menu IDs
-	if err := db.Where("id IN ?", menuIDs).Delete(&model.ShopMenu{}).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete shop menus"})
+	// Delete the DeleteMenu entries after all ShopMenus are deleted
+	if err := tx.Where("temp_id = ?", tempID).Delete(&model.DeleteMenu{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete menus by TempID",
+		})
 	}
 
-	// // Delete the DeleteMenu entries
-	// if err := db.Where("temp_id = ?", tempID).Delete(&model.DeleteMenu{}).Error; err != nil {
-	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete menus by TempID"})
-	// }
+	// Commit the transaction after all operations succeed
+	tx.Commit()
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all menus for TempID"})
 }
+
 
 
 // ==================== PHOTO BIN ====================

@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"strings"
+	"os"
 	"log"
 	"strconv"
 	"github.com/HealthMe-pls/medic-go-api/model"
@@ -434,19 +435,79 @@ func UpdateTempShopByShopID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(tempShop)
 }
-
 func DeleteShop(db *gorm.DB, c *fiber.Ctx) error {
 	// Get the shop ID parameter from the URL
 	id := c.Params("id")
 
-	// Delete the shop from the database by its ID
-	if result := db.Delete(&model.Shop{}, id); result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete shop")
+	// Begin a transaction to ensure atomicity
+	tx := db.Begin()
+
+	// Step 1: Retrieve all menus associated with the shop
+	var menus []model.ShopMenu
+	if err := tx.Where("shop_id = ?", id).Find(&menus).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve shop menus",
+		})
 	}
+
+	// Step 2: Delete each menu using DeleteShopMenu logic
+	for _, menu := range menus {
+		menuID := fmt.Sprintf("%d", menu.ID)
+
+		// Create a new Fiber context for the menu
+		menuCtx := *c
+		menuCtx.Set("id", menuID)
+
+		// Call DeleteShopMenu with the same transaction
+		if err := DeleteShopMenu(tx, &menuCtx); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Step 3: Find all photos associated with the shop
+	var photos []model.Photo
+	if err := tx.Where("shop_id = ?", id).Find(&photos).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve shop photos",
+		})
+	}
+
+	// Step 4: Delete photos from the filesystem if they exist
+	for _, photo := range photos {
+		filePath := fmt.Sprintf("./uploads/%s", photo.PathFile)
+
+		// Try deleting the file, log an error if it fails but continue
+		if err := os.Remove(filePath); err != nil {
+			fmt.Println("Error deleting file:", err)
+		}
+
+		// Delete photo from database
+		if err := tx.Delete(&photo).Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to delete shop photo from database",
+			})
+		}
+	}
+
+	// Step 5: Delete the shop from the database
+	if result := tx.Where("id = ?", id).Delete(&model.Shop{}); result.Error != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete shop",
+		})
+	}
+
+	// Commit the transaction
+	tx.Commit()
 
 	// Return success message
 	return c.SendString("Shop successfully deleted")
 }
+
 
 func GetShopsByCategory(db *gorm.DB, c *fiber.Ctx) error {
 	// Get the ShopCategoryID parameter from the URL
