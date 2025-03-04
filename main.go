@@ -6,7 +6,8 @@ import (
 	"log"
 	"os"
 	"time"
-
+	"os/exec"
+	"runtime"
 	"github.com/HealthMe-pls/medic-go-api/controller"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -17,6 +18,29 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+func runSetupScript() {
+	// Detect the OS
+	switch runtime.GOOS {
+	case "windows":
+		// For Windows, we can run a PowerShell script
+		cmd := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-File", "./setup.ps1")
+		err := cmd.Run()
+		if err != nil {
+			log.Fatalf("Failed to execute setup.ps1: %v", err)
+		}
+		fmt.Println("Setup script executed successfully on Windows.")
+	case "linux", "darwin":
+		// For Linux/macOS, we can run a shell script
+		cmd := exec.Command("bash", "./setup.sh")
+		err := cmd.Run()
+		if err != nil {
+			log.Fatalf("Failed to execute setup.sh: %v", err)
+		}
+		fmt.Println("Setup script executed successfully on Linux/macOS.")
+	default:
+		log.Fatalf("Unsupported OS: %s", runtime.GOOS)
+	}
+}
 func main() {
 	// db connection section
 	db := SetupDatabase()
@@ -53,7 +77,7 @@ func main() {
 	}
 
 	createUploadsDirectory()
-
+	runSetupScript()
 	// ตัวแทนการสื่อสารกับ http server
 	app := fiber.New(fiber.Config{
 		JSONDecoder: json.Unmarshal,
