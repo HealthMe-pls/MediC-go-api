@@ -81,7 +81,7 @@ func DeleteBinMenuByTempID(db *gorm.DB, c *fiber.Ctx) error {
 	// Begin a transaction
 	tx := db.Begin()
 
-	// Fetch all the delete menu entries for the given temp_id
+	// Fetch all delete menu entries for the given temp_id
 	var deleteMenus []model.DeleteMenu
 	if err := tx.Where("temp_id = ?", tempID).Find(&deleteMenus).Error; err != nil {
 		tx.Rollback()
@@ -92,16 +92,11 @@ func DeleteBinMenuByTempID(db *gorm.DB, c *fiber.Ctx) error {
 
 	// Delete each menu using DeleteShopMenu
 	for _, deleteMenu := range deleteMenus {
-		menuID := fmt.Sprintf("%d", deleteMenu.MenuID)
-
-		// Create a new Fiber context for the menu
-		menuCtx := *c
-		menuCtx.Set("id", menuID)
-
-		// Call DeleteShopMenu with the same transaction
-		if err := DeleteShopMenu(tx, &menuCtx); err != nil {
+		if err := DeleteShopMenu(tx, deleteMenu.MenuID); err != nil {
 			tx.Rollback()
-			return err
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": fmt.Sprintf("Failed to delete menu ID %d", deleteMenu.MenuID),
+			})
 		}
 	}
 
@@ -118,6 +113,7 @@ func DeleteBinMenuByTempID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Deleted all menus for TempID"})
 }
+
 
 
 

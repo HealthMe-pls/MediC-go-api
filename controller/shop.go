@@ -451,18 +451,13 @@ func DeleteShop(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
-	// Step 2: Delete each menu using DeleteShopMenu logic
+	// Step 2: Delete all menus associated with the shop
 	for _, menu := range menus {
-		menuID := fmt.Sprintf("%d", menu.ID)
-
-		// Create a new Fiber context for the menu
-		menuCtx := *c
-		menuCtx.Set("id", menuID)
-
-		// Call DeleteShopMenu with the same transaction
-		if err := DeleteShopMenu(tx, &menuCtx); err != nil {
+		if err := DeleteShopMenu(tx, menu.ID); err != nil {
 			tx.Rollback()
-			return err
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to delete shop menu",
+			})
 		}
 	}
 

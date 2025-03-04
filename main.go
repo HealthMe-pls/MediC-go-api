@@ -236,7 +236,7 @@ func main() {
 	app.Post("/photos/shop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c,true)})
 	//admin update and delete
 	app.Put("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.UpdateShopMenu(db, c) })
-	app.Delete("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.DeleteShopMenu(db, c) })
+	app.Delete("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.DeleteShopMenuByID(db, c) })
 	//admin update and delete
 	app.Put("/social/:id", func(c *fiber.Ctx) error { return controller.UpdateSocialMedia(db, c) })
 	app.Delete("/social/:id", func(c *fiber.Ctx) error { return controller.DeleteSocialMedia(db, c) })

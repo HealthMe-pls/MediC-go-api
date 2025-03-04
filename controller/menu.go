@@ -108,52 +108,116 @@ func UpdateShopMenu(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(shopMenu)
 }
-func DeleteShopMenu(tx *gorm.DB, c *fiber.Ctx) error {
-	id := c.Params("id")
+// func DeleteShopMenu(tx *gorm.DB, c *fiber.Ctx) error {
+// 	id := c.Params("id")
 
-	// Step 1: Check if there are photos linked to the menu
+// 	// Step 1: Check if there are photos linked to the menu
+// 	var photos []model.Photo
+// 	if err := tx.Where("menu_id = ?", id).Find(&photos).Error; err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"error": "Failed to check associated photos",
+// 		})
+// 	}
+
+// 	// Step 2: Delete associated photos
+// 	for _, photo := range photos {
+// 		filePath := fmt.Sprintf("./uploads/%s", photo.PathFile)
+
+// 		// Try deleting the file, log an error if it fails but continue
+// 		if err := os.Remove(filePath); err != nil {
+// 			fmt.Println("Error deleting file:", err)
+// 		}
+
+// 		// Delete photo from DB
+// 		if err := tx.Delete(&photo).Error; err != nil {
+// 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 				"error": "Failed to delete associated photo from database",
+// 			})
+// 		}
+// 	}
+
+// 	// Step 3: Delete the corresponding TempMenu entry
+// 	if err := tx.Where("menu_id = ?", id).Delete(&model.TempMenu{}).Error; err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"error": "Failed to delete associated TempMenu",
+// 		})
+// 	}
+
+// 	// Step 4: Delete the ShopMenu entry
+// 	if err := tx.Where("id = ?", id).Delete(&model.ShopMenu{}).Error; err != nil {
+// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+// 			"error": "Failed to delete shop menu",
+// 		})
+// 	}
+
+// 	// No need to commit or rollback here (handled in the main function)
+// 	return nil
+// }
+
+// DeleteShopMenu deletes a menu and related data within the same transaction
+func DeleteShopMenu(tx *gorm.DB, menuID uint) error {
+	// Step 1: Retrieve and delete associated photos
 	var photos []model.Photo
-	if err := tx.Where("menu_id = ?", id).Find(&photos).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to check associated photos",
-		})
+	if err := tx.Where("menu_id = ?", menuID).Find(&photos).Error; err != nil {
+		return fmt.Errorf("failed to check associated photos")
 	}
 
-	// Step 2: Delete associated photos
+	// Delete photos from filesystem
 	for _, photo := range photos {
 		filePath := fmt.Sprintf("./uploads/%s", photo.PathFile)
-
-		// Try deleting the file, log an error if it fails but continue
 		if err := os.Remove(filePath); err != nil {
 			fmt.Println("Error deleting file:", err)
 		}
-
-		// Delete photo from DB
-		if err := tx.Delete(&photo).Error; err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to delete associated photo from database",
-			})
-		}
 	}
 
-	// Step 3: Delete the corresponding TempMenu entry
-	if err := tx.Where("menu_id = ?", id).Delete(&model.TempMenu{}).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete associated TempMenu",
-		})
+	// Delete all photos in DB
+	if err := tx.Where("menu_id = ?", menuID).Delete(&model.Photo{}).Error; err != nil {
+		return fmt.Errorf("failed to delete photos from database")
 	}
 
-	// Step 4: Delete the ShopMenu entry
-	if err := tx.Where("id = ?", id).Delete(&model.ShopMenu{}).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete shop menu",
-		})
+	// Step 2: Delete the corresponding TempMenu entry
+	if err := tx.Where("menu_id = ?", menuID).Delete(&model.TempMenu{}).Error; err != nil {
+		return fmt.Errorf("failed to delete associated TempMenu")
 	}
 
-	// No need to commit or rollback here (handled in the main function)
+	// Step 3: Delete the ShopMenu entry
+	if err := tx.Where("id = ?", menuID).Delete(&model.ShopMenu{}).Error; err != nil {
+		return fmt.Errorf("failed to delete shop menu")
+	}
+
 	return nil
 }
 
+// DeleteShopMenuByID extracts menu_id from request, converts to uint, and calls DeleteShopMenu
+func DeleteShopMenuByID(db *gorm.DB, c *fiber.Ctx) error {
+	// Get menu ID from request parameters
+	menuID, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid menu ID",
+		})
+	}
+
+	// Convert to uint
+	uintMenuID := uint(menuID)
+
+	// Begin transaction
+	tx := db.Begin()
+
+	// Call DeleteShopMenu within the transaction
+	if err := DeleteShopMenu(tx, uintMenuID); err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// Commit transaction if all operations succeed
+	tx.Commit()
+
+	// Return success response
+	return c.SendString("Shop menu successfully deleted")
+}
 
 
 func CreateMenuWithTemp(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
