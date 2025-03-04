@@ -22,12 +22,6 @@ import (
 var jwtSecret = []byte("your_secret_key")
 var secretKey = []byte("mysecretencryptionkey123") // Must be 16, 24, or 32 bytes
 
-
-// HashPassword hashes a password
-// func HashPassword(password string) (string, error) {
-// 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-// 	return string(bytes), err
-// }
 func HashPassword(password string) (string, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -35,11 +29,7 @@ func HashPassword(password string) (string, error) {
 	}
 	return string(hashed), nil
 }
-// // CheckPassword compares a hashed password with plain text
-// func CheckPassword(hashedPassword, password string) bool {
-// 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-// 	return err == nil
-// }
+
 func CheckPassword(encryptedPassword, inputPassword string) bool {
 	// Decrypt the stored encrypted password
 	decryptedPassword, err := DecryptPassword(encryptedPassword)
@@ -104,11 +94,6 @@ func Register(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
 	}
 
-	// Hash and encrypt the password
-	// hashedPassword, err := HashPassword(input.Password)
-	// if err != nil {
-	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Error hashing password"})
-	// }
 	encryptedPassword, err := EncryptPassword(input.Password)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to encrypt password"})
@@ -191,6 +176,43 @@ func Logout(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"message": "Successfully logged out"})
 }
+
+// ResetPassword allows an entrepreneur to reset their password
+func ResetPassword(db *gorm.DB, c *fiber.Ctx) error {
+	
+	id := c.Params("entrepreneur_id")
+	var entrepreneur model.Entrepreneur
+    // Find the entrepreneur by id
+    if err := db.First(&entrepreneur, "id = ?", id).Error; err != nil {
+        return c.Status(fiber.StatusNotFound).SendString("Entrepreneur not found")
+    }
+	
+    // Parse the updated details from the request body
+    if err := c.BodyParser(&entrepreneur); err != nil {
+        return c.Status(fiber.StatusBadRequest).SendString("Failed to parse request body")
+    }
+
+	// Encrypt the new password
+	encryptedPassword, err := EncryptPassword(entrepreneur.Password)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to encrypt password",
+		})
+	}
+	// Update the password
+	entrepreneur.Password = encryptedPassword
+	if err := db.Save(&entrepreneur).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update password",
+		})
+	}
+
+	// Success response
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Password reset successfully",
+	})
+}
+
 // GetEntrepreneurWithPassword fetches entrepreneur details including the hashed password
 func GetEntrepreneurWithPassword(db *gorm.DB, c *fiber.Ctx) error {
 	username := c.Params("username") // Get username from URL params

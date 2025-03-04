@@ -109,7 +109,7 @@ func main() {
 	app.Get("/entrepreneur", func(c *fiber.Ctx) error { return controller.GetAllEntrepreneur(db, c) })
 
 	app.Get("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.GetEntrepreneurByID(db, c) })
-	app.Post("/entrepreneur", func(c *fiber.Ctx) error { return controller.CreateEntrepreneur(db, c) })
+	app.Post("/entrepreneur", func(c *fiber.Ctx) error { return controller.Register(db, c) })
 	app.Put("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.UpdateEntrepreneur(db, c) })
 	app.Delete("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.DeleteEntrepreneurByID(db, c) })
 
@@ -308,6 +308,9 @@ func main() {
 		return controller.Login(db, c)
 	})
 	app.Post("/logout", controller.Logout)
+	app.Put("/resetPassword", func(c *fiber.Ctx)error {
+		return controller.ResetPassword(db,c)
+	})
 	app.Get("/shopLogin", func(c *fiber.Ctx) error {
         return controller.GetShopDetailsByLoggedInEntrepreneur(db, c)
     })

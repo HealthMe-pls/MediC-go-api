@@ -77,7 +77,13 @@ func UpdateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
     if err := c.BodyParser(&entrepreneur); err != nil {
         return c.Status(fiber.StatusBadRequest).SendString("Failed to parse request body")
     }
-
+	encryptedPassword, err := EncryptPassword(entrepreneur.Password)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to encrypt password",
+		})
+	}
+	entrepreneur.Password = encryptedPassword
     // Save the updated entrepreneur details to the database
     if result := db.Save(&entrepreneur); result.Error != nil {
         return c.Status(fiber.StatusInternalServerError).SendString("Failed to update entrepreneur")
