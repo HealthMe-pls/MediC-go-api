@@ -129,7 +129,11 @@ func CreatePhotoByMenuID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 	if err := c.SaveFile(file, filePath); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save image")
 	}
-
+	
+	// Set file permissions to allow deletion
+	if err := os.Chmod(filePath, 0666); err != nil {
+		fmt.Println("Failed to set file permissions:", err)
+	}
 	photo := new(model.Photo)
 	if err := c.BodyParser(photo); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{

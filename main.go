@@ -357,8 +357,21 @@ func SetupDatabase() *gorm.DB {
 	return db
 }
 
+
 func createUploadsDirectory() {
-	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
-		os.Mkdir("./uploads", os.ModePerm)
+	// Check if the directory exists
+	_, err := os.Stat("./uploads")
+	if os.IsNotExist(err) {
+		// If the directory doesn't exist, create it
+		err := os.MkdirAll("./uploads", 0777) // 0777 sets permissions for all users (read, write, execute)
+		if err != nil {
+			log.Fatalf("Failed to create uploads directory: %v", err)
+		}
+	} else {
+		// If the directory exists, set the permissions
+		err := os.Chmod("./uploads", 0777) // Ensure permissions are 0777
+		if err != nil {
+			log.Fatalf("Failed to set permissions on uploads directory: %v", err)
+		}
 	}
 }
