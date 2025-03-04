@@ -1,9 +1,17 @@
 package controller
 
 import (
+	"errors"
+	"io"
 	"time"
+	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/HealthMe-pls/medic-go-api/model"
+	"github.com/HealthMe-pls/medic-go-api/database"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 	"golang.org/x/crypto/bcrypt"
@@ -12,20 +20,82 @@ import (
 
 // Secret key for JWT
 var jwtSecret = []byte("your_secret_key")
+var secretKey = []byte("mysecretencryptionkey123") // Must be 16, 24, or 32 bytes
+
 
 // HashPassword hashes a password
+// func HashPassword(password string) (string, error) {
+// 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// 	return string(bytes), err
+// }
 func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), err
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashed), nil
+}
+// // CheckPassword compares a hashed password with plain text
+// func CheckPassword(hashedPassword, password string) bool {
+// 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+// 	return err == nil
+// }
+func CheckPassword(encryptedPassword, inputPassword string) bool {
+	// Decrypt the stored encrypted password
+	decryptedPassword, err := DecryptPassword(encryptedPassword)
+	if err != nil {
+		return false // Return false if decryption fails
+	}
+
+	// Compare decrypted password with the user input
+	return decryptedPassword == inputPassword
 }
 
-// CheckPassword compares a hashed password with plain text
-func CheckPassword(hashedPassword, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	return err == nil
+
+// EncryptPassword encrypts a password using AES
+func EncryptPassword(password string) (string, error) {
+	block, err := aes.NewCipher(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	ciphertext := make([]byte, aes.BlockSize+len(password))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", err
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ciphertext[aes.BlockSize:], []byte(password))
+
+	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-// Register a new entrepreneur
+// DecryptPassword decrypts an encrypted password
+func DecryptPassword(encrypted string) (string, error) {
+	ciphertext, err := base64.StdEncoding.DecodeString(encrypted)
+	if err != nil {
+		return "", err
+	}
+
+	block, err := aes.NewCipher(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	if len(ciphertext) < aes.BlockSize {
+		return "", errors.New("ciphertext too short")
+	}
+
+	iv := ciphertext[:aes.BlockSize]
+	ciphertext = ciphertext[aes.BlockSize:]
+
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(ciphertext, ciphertext)
+
+	return string(ciphertext), nil
+}
+// Register a new Entrepreneur
 func Register(db *gorm.DB, c *fiber.Ctx) error {
 	var input model.Entrepreneur
 
@@ -34,24 +104,35 @@ func Register(db *gorm.DB, c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
 	}
 
-	// Hash the password before storing
-	hashedPassword, err := HashPassword(input.Password)
+	// Hash and encrypt the password
+	// hashedPassword, err := HashPassword(input.Password)
+	// if err != nil {
+	// 	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Error hashing password"})
+	// }
+	encryptedPassword, err := EncryptPassword(input.Password)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Error hashing password"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to encrypt password"})
 	}
 
-	entrepreneur := model.Entrepreneur{
+	// Create a new Entrepreneur
+	Entrepreneur := model.Entrepreneur{
 		Username: input.Username,
-		Password: hashedPassword,
+		Password: encryptedPassword, // Store hashed password
 	}
 
 	// Save to database
-	if err := db.Create(&entrepreneur).Error; err != nil {
+	if err := db.Create(&Entrepreneur).Error; err != nil {
 		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "Username already exists"})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "User registered successfully"})
+	// Return response
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message":            "User registered successfully",
+		"username":           Entrepreneur.Username,
+		"password_encrypted": encryptedPassword, // Show encrypted password for debugging (Remove in production)
+	})
 }
+
 // GenerateJWT generates a JWT token
 func GenerateJWT(username string) (string, error) {
 	claims := jwt.MapClaims{
@@ -88,4 +169,68 @@ func Login(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
+}
+// Logout function to blacklist JWT token
+func Logout(c *fiber.Ctx) error {
+	// Get token from header
+	tokenString := c.Get("Authorization")
+	if tokenString == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
+	}
+
+	// Remove "Bearer " prefix if present
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+
+	// Store the token in Redis with an expiration time
+	err := database.RedisClient.Set(context.Background(), tokenString, "blacklisted", 24*time.Hour).Err()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to blacklist token"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Successfully logged out"})
+}
+// GetEntrepreneurWithPassword fetches entrepreneur details including the hashed password
+func GetEntrepreneurWithPassword(db *gorm.DB, c *fiber.Ctx) error {
+	username := c.Params("username") // Get username from URL params
+
+	var entrepreneur model.Entrepreneur
+	if err := db.Where("username = ?", username).First(&entrepreneur).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Entrepreneur not found"})
+	}
+
+	// WARNING: Returning hashed passwords is a security risk!
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"username": entrepreneur.Username,
+		"password": entrepreneur.Password, // Hashed password
+		"message":  "Entrepreneur found",
+	})
+}
+
+
+func GetAllEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
+	var entrepreneur []model.Entrepreneur
+
+	// Fetch all entrepreneur
+	if err := db.Find(&entrepreneur).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "Failed to retrieve entrepreneur",
+			"details": err.Error(),
+		})
+	}
+
+	// Decrypt passwords
+	for i := range entrepreneur {
+		decryptedPassword, err := DecryptPassword(entrepreneur[i].Password)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to decrypt password",
+				"details": err.Error(),
+			})
+		}
+		entrepreneur[i].Password = decryptedPassword
+	}
+
+	return c.Status(fiber.StatusOK).JSON(entrepreneur)
 }
