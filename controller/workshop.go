@@ -113,22 +113,27 @@ func getPhotosByWorkshopID(db *gorm.DB, workshopID uint) ([]fiber.Map, error) {
 }
 
 
-// CreateWorkshop creates a new workshop
+// CreateWorkshop creates a new workshop and returns only its ID
 func CreateWorkshop(db *gorm.DB, c *fiber.Ctx) error {
 	var workshop model.Workshop
 	if err := c.BodyParser(&workshop); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request payload",
+			"error":   "Invalid request payload",
 			"details": err.Error(),
 		})
 	}
+
 	if err := db.Create(&workshop).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create workshop",
+			"error":   "Failed to create workshop",
 			"details": err.Error(),
 		})
 	}
-	return c.Status(fiber.StatusCreated).JSON(workshop)
+
+	// Return only the ID of the created workshop
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"id": workshop.ID,
+	})
 }
 
 // UpdateWorkshop updates an existing workshop
