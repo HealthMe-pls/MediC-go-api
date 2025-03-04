@@ -6,7 +6,8 @@ import (
 	"log"
 	"os"
 	"time"
-
+	"github.com/HealthMe-pls/medic-go-api/middleware"
+	"github.com/HealthMe-pls/medic-go-api/database"
 	"github.com/HealthMe-pls/medic-go-api/controller"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -20,7 +21,10 @@ import (
 func main() {
 	// db connection section
 	db := SetupDatabase()
-
+	database.ConnectRedis()
+	if database.RedisClient == nil {
+		log.Fatal("Redis connection failed")
+	}
 	// for development only
 	if err := db.AutoMigrate(
 		&model.Patient{},
@@ -298,9 +302,15 @@ func main() {
 	app.Post("/login", func(c *fiber.Ctx) error {
 		return controller.Login(db, c)
 	})
+	app.Post("/logout", controller.Logout)
 	app.Get("/shopLogin", func(c *fiber.Ctx) error {
         return controller.GetShopDetailsByLoggedInEntrepreneur(db, c)
     })
+
+	protected := app.Group("/protected", middleware.AuthLogin)
+	protected.Get("/profile", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"message": "You are authenticated!"})
+	})
 
 	app.Get("/config", getENV)
 

@@ -4,12 +4,14 @@ import (
 	"errors"
 	"io"
 	"time"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/HealthMe-pls/medic-go-api/model"
+	"github.com/HealthMe-pls/medic-go-api/database"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 	"golang.org/x/crypto/bcrypt"
@@ -167,38 +169,6 @@ func Login(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"token": token})
-}
-
-// AuthLogin middleware checks for a valid JWT token and ensures it is not blacklisted
-func AuthLogin(c *fiber.Ctx) error {
-	// Get token from header
-	tokenString := c.Get("Authorization")
-	if tokenString == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
-	}
-
-	// Remove "Bearer " prefix if present
-	if strings.HasPrefix(tokenString, "Bearer ") {
-		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
-	}
-
-	// Check if token is blacklisted in Redis
-	exists, err := database.RedisClient.Get(context.Background(), tokenString).Result()
-	if err == nil && exists == "blacklisted" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Token has been revoked"})
-	}
-
-	// Parse the token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-
-	if err != nil || !token.Valid {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
-	}
-
-	// Token is valid, allow the request to continue
-	return c.Next()
 }
 // Logout function to blacklist JWT token
 func Logout(c *fiber.Ctx) error {
