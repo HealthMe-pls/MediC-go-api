@@ -141,6 +141,8 @@ func main() {
 	app.Get("/shopdetail", func(c *fiber.Ctx) error { return controller.GetShopDetail(db, c) })
 	app.Get("/shopdetail/:id", func(c *fiber.Ctx) error { return controller.GetShopDetailByID(db, c) })
 	app.Get("/entrepreneur/shopdetail/:entrepreneur_id", func(c *fiber.Ctx) error { return controller.GetShopDetailsByEntrepreneurID(db, c) })
+	//how to use shopid?shopidkeyword=Cotton Farm
+	app.Get("/shopid", func(c *fiber.Ctx) error {return controller.SearchShopsidByshopname(db, c)})
 
 	app.Get("/shop", func(c *fiber.Ctx) error { return controller.GetShops(db, c) })
 	app.Put("/admin/shop/:id", func(c *fiber.Ctx) error { return controller.UpdateShopByAdmin(db, c) })
@@ -240,13 +242,16 @@ func main() {
 	app.Post("/photos/shop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c,true)})
 	//admin update and delete
 	app.Put("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.UpdateShopMenu(db, c) })
-	app.Delete("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.DeleteShopMenu(db, c) })
+	app.Delete("/shopmenu/:id", func(c *fiber.Ctx) error { return controller.DeleteShopMenuByID(db, c) })
 	//admin update and delete
 	app.Put("/social/:id", func(c *fiber.Ctx) error { return controller.UpdateSocialMedia(db, c) })
 	app.Delete("/social/:id", func(c *fiber.Ctx) error { return controller.DeleteSocialMedia(db, c) })
 	app.Post("/shoptime", func(c *fiber.Ctx) error { return controller.CreateShopOpenDate(db, c) })
 	app.Put("/shoptime/:id", func(c *fiber.Ctx) error { return controller.UpdateShopOpenDate(db, c) })
 	app.Delete("/shoptime/:id", func(c *fiber.Ctx) error { return controller.DeleteShopOpenDate(db, c) })
+	app.Delete("/uploadphotos/:id", func(c *fiber.Ctx) error {
+		return controller.DeletePhotoByID(db, c)
+	})
 
 	
 	app.Get("/menubin", func(c *fiber.Ctx) error { return controller.GetBinMenus(db, c) })
@@ -364,8 +369,21 @@ func SetupDatabase() *gorm.DB {
 	return db
 }
 
+
 func createUploadsDirectory() {
-	if _, err := os.Stat("./uploads"); os.IsNotExist(err) {
-		os.Mkdir("./uploads", os.ModePerm)
+	// Check if the directory exists
+	_, err := os.Stat("./uploads")
+	if os.IsNotExist(err) {
+		// If the directory doesn't exist, create it
+		err := os.MkdirAll("./uploads", 0777) // 0777 sets permissions for all users (read, write, execute)
+		if err != nil {
+			log.Fatalf("Failed to create uploads directory: %v", err)
+		}
+	} else {
+		// If the directory exists, set the permissions
+		err := os.Chmod("./uploads", 0777) // Ensure permissions are 0777
+		if err != nil {
+			log.Fatalf("Failed to set permissions on uploads directory: %v", err)
+		}
 	}
 }

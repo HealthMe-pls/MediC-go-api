@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -25,26 +26,7 @@ func GetEntrepreneurByID(db *gorm.DB, c *fiber.Ctx) error {
     // If successful, return the entrepreneur data as a JSON response
     return c.JSON(entrepreneur)
 }
-// func CreateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
-// 	// Parse the request body into the Entrepreneur struct
-// 	entrepreneur := new(model.Entrepreneur)
-// 	if err := c.BodyParser(entrepreneur); err != nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-// 			"error": "Failed to parse request body",
-// 		})
-// 	}
-    
 
-// 	// Save the Entrepreneur to the database
-// 	if result := db.Create(&entrepreneur); result.Error != nil {
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-// 			"error": "Failed to create entrepreneur",
-// 		})
-// 	}
-
-// 	// Return the created Entrepreneur as a JSON response
-// 	return c.Status(fiber.StatusCreated).JSON(entrepreneur)
-// }
 func CreateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
 	// Parse the request body into the Entrepreneur struct
 	entrepreneur := new(model.Entrepreneur)
@@ -105,43 +87,63 @@ func UpdateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
     return c.JSON(entrepreneur)
 }
 
-// func DeleteEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
-//     // Get the id parameter from the URL
-//     id := c.Params("id")
-
-//     // Delete the entrepreneur from the database by their id
-//     if result := db.Delete(&model.Entrepreneur{}, "id = ?", id); result.Error != nil {
-//         return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete entrepreneur")
-//     }
-
-//     // Return success message
-//     return c.SendString("Entrepreneur successfully deleted")
-// }
-
 func DeleteEntrepreneurByID(db *gorm.DB, c *fiber.Ctx) error {
 	entrepreneurID := c.Params("id")
 
-	// Check if the Entrepreneur exists
+	// Begin a transaction to ensure atomicity
+	tx := db.Begin()
+
+	// Step 1: Check if the Entrepreneur exists
 	var entrepreneur model.Entrepreneur
-	if err := db.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
+	if err := tx.First(&entrepreneur, "id = ?", entrepreneurID).Error; err != nil {
+		tx.Rollback()
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error":   "Entrepreneur not found",
 			"details": err.Error(),
 		})
 	}
 
-	// Delete the Entrepreneur (this will cascade delete associated Shops)
-	if err := db.Delete(&entrepreneur).Error; err != nil {
+	// Step 2: Retrieve all shops associated with the entrepreneur
+	var shops []model.Shop
+	if err := tx.Where("entrepreneur_id = ?", entrepreneurID).Find(&shops).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve shops",
+		})
+	}
+
+	// Step 3: Delete each shop using DeleteShop function
+	for _, shop := range shops {
+		shopID := fmt.Sprintf("%d", shop.ID)
+
+		// Call DeleteShop manually
+		shopCtx := *c
+		shopCtx.Set("id", shopID)
+
+		if err := DeleteShop(tx, &shopCtx); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Step 4: Delete the Entrepreneur (ensuring all associated shops are removed)
+	if err := tx.Delete(&entrepreneur).Error; err != nil {
+		tx.Rollback()
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Failed to delete entrepreneur",
 			"details": err.Error(),
 		})
 	}
 
+	// Commit the transaction
+	tx.Commit()
+
+	// Return success message
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Entrepreneur deleted successfully",
 	})
 }
+
 
 
 

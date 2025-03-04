@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -128,7 +129,11 @@ func CreatePhotoByMenuID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 	if err := c.SaveFile(file, filePath); err != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save image")
 	}
-
+	
+	// Set file permissions to allow deletion
+	if err := os.Chmod(filePath, 0666); err != nil {
+		fmt.Println("Failed to set file permissions:", err)
+	}
 	photo := new(model.Photo)
 	if err := c.BodyParser(photo); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -156,53 +161,6 @@ func CreatePhotoByMenuID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 	})
 }
 
-// // CreatePhotoByMenuID creates a Photo by MenuID with IsPublic set to false
-// func CreatePhotoByMenuID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
-// 	// Parse menu_id from the URL params
-// 	menuID, err := strconv.Atoi(c.Params("menu_id"))
-// 	if err != nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-// 			"error": "Invalid menu ID",
-// 		})
-// 	}
-// 	unitMenuID := uint(menuID)
-// 	// Parse request body into the Photo struct
-// 	// Read file from request
-// 	file, err := c.FormFile("image")
-// 	if err != nil {
-// 		return c.Status(fiber.StatusBadRequest).SendString("Failed to read image")
-// 	}
-	
-// 	// Save the file to the server
-// 	filePath := fmt.Sprintf("./uploads/%s", file.Filename)
-// 	fileName := file.Filename
-// 	if err := c.SaveFile(file, filePath); err != nil {
-// 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to save image")
-// 	}
-// 	photo := new(model.Photo)
-// 	if err := c.BodyParser(photo); err != nil {
-// 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-// 			"error":   "Failed to parse request body",
-// 			"details": err.Error(),
-// 		})
-// 	}
-// 	photo.PathFile = fileName
-// 	// Set IsPublic to false and assign MenuID
-// 	photo.IsPublic = isPublic
-// 	photo.MenuID = &unitMenuID // Convert menuID to uint
-
-// 	// Create the Photo entry in the database
-// 	if err := db.Create(&photo).Error; err != nil {
-// 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-// 			"error":   "Failed to create photo",
-// 			"details": err.Error(),
-// 		})
-// 	}
-
-// 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-// 		"photo": photo,
-// 	})
-// }
 // CreatePhotoByShopID creates a Photo by ShopID with IsPublic set to false
 func CreatePhotoByShopID(db *gorm.DB, c *fiber.Ctx, isPublic bool) error {
 	// Parse shop_id from the URL params
@@ -313,6 +271,40 @@ func CreatePhotoByWorkshopID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"photo": photo,
+	})
+}
+
+
+// DeletePhotoByID deletes a photo by its ID and removes the file from the server
+func DeletePhotoByID(db *gorm.DB, c *fiber.Ctx) error {
+	photoID := c.Params("id")
+
+	// Find the photo by ID
+	var photo model.Photo
+	if err := db.First(&photo, photoID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Photo not found",
+		})
+	}
+
+	// Build the file path
+	filePath := fmt.Sprintf("./uploads/%s", photo.PathFile)
+
+	// Delete the file from the uploads folder
+	if err := os.Remove(filePath); err != nil {
+		// Log the error but continue deleting from DB
+		fmt.Println("Error deleting file:", err)
+	}
+
+	// Delete the photo from the database
+	if err := db.Delete(&photo).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete photo from database",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Photo deleted successfully",
 	})
 }
 

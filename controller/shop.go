@@ -2,6 +2,9 @@ package controller
 
 import (
 	"fmt"
+	"strings"
+	"os"
+	"log"
 	"strconv"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -432,19 +435,74 @@ func UpdateTempShopByShopID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(tempShop)
 }
-
 func DeleteShop(db *gorm.DB, c *fiber.Ctx) error {
 	// Get the shop ID parameter from the URL
 	id := c.Params("id")
 
-	// Delete the shop from the database by its ID
-	if result := db.Delete(&model.Shop{}, id); result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to delete shop")
+	// Begin a transaction to ensure atomicity
+	tx := db.Begin()
+
+	// Step 1: Retrieve all menus associated with the shop
+	var menus []model.ShopMenu
+	if err := tx.Where("shop_id = ?", id).Find(&menus).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve shop menus",
+		})
 	}
+
+	// Step 2: Delete all menus associated with the shop
+	for _, menu := range menus {
+		if err := DeleteShopMenu(tx, menu.ID); err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to delete shop menu",
+			})
+		}
+	}
+
+	// Step 3: Find all photos associated with the shop
+	var photos []model.Photo
+	if err := tx.Where("shop_id = ?", id).Find(&photos).Error; err != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve shop photos",
+		})
+	}
+
+	// Step 4: Delete photos from the filesystem if they exist
+	for _, photo := range photos {
+		filePath := fmt.Sprintf("./uploads/%s", photo.PathFile)
+
+		// Try deleting the file, log an error if it fails but continue
+		if err := os.Remove(filePath); err != nil {
+			fmt.Println("Error deleting file:", err)
+		}
+
+		// Delete photo from database
+		if err := tx.Delete(&photo).Error; err != nil {
+			tx.Rollback()
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to delete shop photo from database",
+			})
+		}
+	}
+
+	// Step 5: Delete the shop from the database
+	if result := tx.Where("id = ?", id).Delete(&model.Shop{}); result.Error != nil {
+		tx.Rollback()
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to delete shop",
+		})
+	}
+
+	// Commit the transaction
+	tx.Commit()
 
 	// Return success message
 	return c.SendString("Shop successfully deleted")
 }
+
 
 func GetShopsByCategory(db *gorm.DB, c *fiber.Ctx) error {
 	// Get the ShopCategoryID parameter from the URL
@@ -551,4 +609,45 @@ func DeleteShopCategory(db *gorm.DB, c *fiber.Ctx) error {
 
 	// Return success message
 	return c.SendString("ShopCategory deleted successfully")
+}
+
+
+// SearchShopsidByshopname will search for a single shop by name and return only id and name
+func SearchShopsidByshopname(db *gorm.DB, c *fiber.Ctx) error {
+	// Get the query parameter `shopidkeyword` and trim any extra spaces
+	shopNameKeyword := strings.TrimSpace(c.Query("shopidkeyword"))
+	if shopNameKeyword == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "shopidkeyword is required",
+		})
+	}
+
+	// Query the database using Raw SQL to avoid issues with WHERE clause
+	var shop struct {
+		ID   uint   `json:"id"`
+		Name string `json:"name"`
+	}
+
+	// Use db.Raw to write a more explicit query (without LOWER for case-sensitive search)
+	query := "SELECT id, name FROM shops WHERE name = ? LIMIT 1"
+	err := db.Raw(query, shopNameKeyword).Scan(&shop).Error
+	if err != nil {
+		// Log the error details for debugging
+		log.Println("Error querying shop:", err)
+
+		// Handle specific database errors
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"message": "Shop not found with the name: " + shopNameKeyword,
+			})
+		}
+
+		// Return a generic error with detailed info
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// Return the found shop (only ID and Name) as JSON
+	return c.JSON(shop)
 }
