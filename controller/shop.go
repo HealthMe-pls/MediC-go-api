@@ -374,8 +374,7 @@ func CreateShopWithTemp(db *gorm.DB, c *fiber.Ctx) error {
 
 	// Return the created Shop and TempShop details
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"shop":     shop,
-		"tempShop": tempShop,
+		"shop_id": shop.ID,
 	})
 }
 
