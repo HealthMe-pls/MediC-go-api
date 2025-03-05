@@ -26,10 +26,6 @@ type Admin struct {
 	ID         uint   `gorm:"primaryKey" json:"id"`
 	Email      string `gorm:"unique" json:"email"`
 	Password   string `json:"password"`
-	Title      string `json:"title"`
-	FirstName  string `json:"first_name"`
-	MiddleName string `json:"middle_name"`
-	LastName   string `json:"last_name"`
 }
 
 // Entrepreneur represents the Entrepreneur table
