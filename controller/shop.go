@@ -325,7 +325,7 @@ func CreateShop(db *gorm.DB, c *fiber.Ctx) error {
 
 	// Return the created Shop as a JSON response
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"id": shop.ID,
+		"shop_id": shop.ID,
 	})
 }
 func CreateShopWithTemp(db *gorm.DB, c *fiber.Ctx) error {
