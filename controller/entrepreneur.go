@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"strconv"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -92,9 +93,17 @@ func UpdateEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
     // Return the updated entrepreneur as a JSON response
     return c.JSON(entrepreneur)
 }
-
 func DeleteEntrepreneurByID(db *gorm.DB, c *fiber.Ctx) error {
-	entrepreneurID := c.Params("id")
+	// Get the entrepreneur ID parameter from the URL
+	idParam := c.Params("id")
+
+	// Convert entrepreneur ID to uint
+	entrepreneurID, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid entrepreneur ID",
+		})
+	}
 
 	// Begin a transaction to ensure atomicity
 	tx := db.Begin()
@@ -118,22 +127,19 @@ func DeleteEntrepreneurByID(db *gorm.DB, c *fiber.Ctx) error {
 		})
 	}
 
-	// Step 3: Delete each shop using DeleteShop function
+	// Step 3: Delete each shop using DeleteShopByID within the same transaction
 	for _, shop := range shops {
-		shopID := fmt.Sprintf("%d", shop.ID)
-
-		// Call DeleteShop manually
-		shopCtx := *c
-		shopCtx.Set("id", shopID)
-
-		if err := DeleteShop(tx, &shopCtx); err != nil {
+		if err := DeleteShopByID(tx, shop.ID); err != nil {
 			tx.Rollback()
-			return err
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   fmt.Sprintf("Failed to delete shop ID %d", shop.ID),
+				"details": err.Error(),
+			})
 		}
 	}
 
-	// Step 4: Delete the Entrepreneur (ensuring all associated shops are removed)
-	if err := tx.Delete(&entrepreneur).Error; err != nil {
+	// Step 4: Delete the Entrepreneur after all shops are deleted (within the same transaction)
+	if err := tx.Where("id = ?", entrepreneurID).Delete(&model.Entrepreneur{}).Error; err != nil {
 		tx.Rollback()
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "Failed to delete entrepreneur",
@@ -142,14 +148,15 @@ func DeleteEntrepreneurByID(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	// Commit the transaction
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to commit transaction",
+		})
+	}
 
 	// Return success message
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Entrepreneur deleted successfully",
 	})
 }
-
-
-
 
