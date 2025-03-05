@@ -341,6 +341,8 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 		tempShopResponses = append(tempShopResponses, fiber.Map{
 			"id":            tempShop.TempID,
 			"name":          tempShop.Name,
+			"description":	 tempShop.Description,
+			"category_id":	 tempShop.ShopCategoryID,
 			"shop_id":       shopID,
 			"deleteSocials": deleteSocials,
 			"socials":       socials,

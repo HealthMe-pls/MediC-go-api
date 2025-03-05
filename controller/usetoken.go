@@ -124,6 +124,8 @@ func GetTempShopsByEntrepreneurID(db *gorm.DB, entrepreneurID uint) ([]fiber.Map
 			"id":            tempShop.TempID,
             "entrepreneur_id":entrepreneurID,
 			"name":          tempShop.Name,
+			"description":	 tempShop.Description,
+			"category_id":	 tempShop.ShopCategoryID,
 			"shop_id":       shopID,
 			"deleteSocials": deleteSocials,
 			"socials":       socials,
