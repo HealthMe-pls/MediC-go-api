@@ -2,10 +2,11 @@ package controller
 
 import (
 	"fmt"
-	"strings"
-	"os"
 	"log"
+	"os"
 	"strconv"
+	"strings"
+
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -210,6 +211,7 @@ func getShopOpenDates(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
 			"id":         date.ID,
 			"start_time": date.StartTime,
 			"end_time":   date.EndTime,
+			"market_open_date_id": date.MarketOpenDateID,
 		})
 	}
 	return result, nil
