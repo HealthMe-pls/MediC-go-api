@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 	"github.com/HealthMe-pls/medic-go-api/middleware"
-	"github.com/HealthMe-pls/medic-go-api/database"
+	"github.com/HealthMe-pls/medic-go-api/database"	
 	"github.com/HealthMe-pls/medic-go-api/controller"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
@@ -307,7 +307,7 @@ func main() {
 		return controller.Register(db, c)
 	})
 
-	app.Post("/login", func(c *fiber.Ctx) error {
+	app.Post("/login/Entrepreneur", func(c *fiber.Ctx) error {
 		return controller.Login(db, c)
 	})
 	app.Post("/logout", controller.Logout)
@@ -318,13 +318,23 @@ func main() {
         return controller.GetShopDetailsByLoggedInEntrepreneur(db, c)
     })
 
-	protected := app.Group("/protected", middleware.AuthLogin)
+	protected := app.Group("/protected", middleware.AuthLoginEntrepreneur)
 	protected.Get("/profile", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "You are authenticated!"})
 	})
 
-	app.Get("/config", getENV)
+	app.Post("/login/admin", middleware.AuthLoginAdmin, func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"message": "Admin login successful via Infomaniak"})
+	})
 
+	// Protected routes (Example: Dashboard)
+	app.Get("/dashboard/entrepreneur", middleware.AuthLoginEntrepreneur, func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"message": "Welcome to the Entrepreneur Dashboard"})
+	})
+
+	app.Get("/dashboard/admin", middleware.AuthLoginAdmin, func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"message": "Welcome to the Admin Dashboard"})
+	})
 	app.Listen(":8080")
 
 }

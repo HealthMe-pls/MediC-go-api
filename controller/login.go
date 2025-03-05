@@ -118,8 +118,8 @@ func Register(db *gorm.DB, c *fiber.Ctx) error {
 	})
 }
 
-// GenerateJWT generates a JWT token
-func GenerateJWT(username string) (string, error) {
+// GenerateJWTEntrepreneur generates a JWT token
+func GenerateJWTEntrepreneur(username string) (string, error) {
 	claims := jwt.MapClaims{
 		"username": username,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(), // Token expires in 24 hours
@@ -148,7 +148,7 @@ func Login(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	// Generate JWT
-	token, err := GenerateJWT(entrepreneur.Username)
+	token, err := GenerateJWTEntrepreneur(entrepreneur.Username)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not generate token"})
 	}

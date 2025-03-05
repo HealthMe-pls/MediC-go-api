@@ -4,16 +4,16 @@ import (
 	"context"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/HealthMe-pls/medic-go-api/database"
 )
 
-// Secret key for JWT
+// Replace with your actual secret key
 var jwtSecret = []byte("your_secret_key")
 
-// AuthLogin middleware checks for a valid JWT token and ensures it is not blacklisted
-func AuthLogin(c *fiber.Ctx) error {
+// AuthLoginEntrepreneur middleware checks for a valid JWT token and ensures it is not blacklisted
+func AuthLoginEntrepreneur(c *fiber.Ctx) error {
 	// Get token from header
 	tokenString := c.Get("Authorization")
 	if tokenString == "" {
