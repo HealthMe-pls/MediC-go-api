@@ -146,7 +146,7 @@ func main() {
 
 	app.Get("/shop", func(c *fiber.Ctx) error { return controller.GetShops(db, c) })
 	app.Put("/admin/shop/:id", func(c *fiber.Ctx) error { return controller.UpdateShopByAdmin(db, c) })
-	app.Put("/shop/:shop_id", func(c *fiber.Ctx) error { return controller.UpdateTempShopByShopID(db, c) })
+	
 	app.Delete("/shop/:id", func(c *fiber.Ctx) error { return controller.DeleteShop(db, c) })
 	app.Get("/shops/category/:shop_category_id", func(c *fiber.Ctx) error { return controller.GetShopsByCategory(db, c) })
 
@@ -227,15 +227,18 @@ func main() {
 	// photo create by entrepreneur
 	app.Post("/photosmenu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c,false)})
 	app.Post("/photosshop/:shop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByShopID(db, c,false)})
+	//entrepreneurupdate
+	app.Put("/shop/:shop_id", func(c *fiber.Ctx) error { return controller.UpdateTempShopByShopID(db, c) })
+	//menuupdate by entrepreneur
+	app.Put("/updatemenu/:menu_id", func(c *fiber.Ctx) error {return controller.UpdateTempMenuByMenuID(db, c)})
+	//social update by entrepreneur
+	app.Put("updatesocial/:social_id",func(c *fiber.Ctx) error {return controller.UpdateSocialBySocialID(db, c)})
+	
 	
 	//admin
 	app.Post("/socials/admin", func(c *fiber.Ctx) error {return controller.CreateSocialWithTemp(db, c, true)})
 	app.Post("/menus/admin", func(c *fiber.Ctx) error {return controller.CreateMenuWithTemp(db, c, true) })
 	app.Post("/createshop/admin", func(c *fiber.Ctx) error {return controller.CreateShopWithTemp(db, c)})
-	//menuupdate by entrepreneur
-	app.Put("/updatemenu/:menu_id", func(c *fiber.Ctx) error {return controller.UpdateTempMenuByMenuID(db, c)})
-	//social update by entrepreneur
-	app.Put("updatesocial/:social_id",func(c *fiber.Ctx) error {return controller.UpdateSocialBySocialID(db, c)})
 	//photo create by admin
 	app.Post("/photos/workshop/:workshop_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByWorkshopID(db, c)})
 	app.Post("/photos/menu/:menu_id", func(c *fiber.Ctx) error {return controller.CreatePhotoByMenuID(db, c,true)})

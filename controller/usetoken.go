@@ -63,51 +63,82 @@ func GetShopDetailsByLoggedInEntrepreneur(db *gorm.DB, c *fiber.Ctx) error {
 
     // Log found entrepreneur ID
     fmt.Println("Entrepreneur ID: ", entrepreneur.ID)
-
-    // Fetch all shops belonging to this entrepreneur
-    var shops []model.Shop
-    if err := db.Preload("Entrepreneur").
-        Preload("ShopCategory").
-        Where("entrepreneur_id = ?", entrepreneur.ID).
-        Find(&shops).Error; err != nil {
-        fmt.Println("Failed to retrieve shops:", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve shops", "details": err.Error()})
+    // Get TempShops using the helper function
+    tempShops, err := GetTempShopsByEntrepreneurID(db, entrepreneur.ID)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
     }
 
-    // If no shops found, return an empty array
-    if len(shops) == 0 {
-        fmt.Println("No shops found")
-        return c.JSON([]fiber.Map{})
-    }
-
-    // Prepare response array
-    var shopResponses []fiber.Map
-    for _, shop := range shops {
-        shopOpenDates, _ := getShopOpenDates(db, shop.ID)
-        shopMenus, _ := getShopMenus(db, shop.ID)
-        socialMedias, _ := getSocialMedia(db, shop.ID)
-        shopPhotos, _ := getPhotosByShopID(db, shop.ID)
-
-        // Construct response object
-        shopResponse := fiber.Map{
-            "shop_id":         shop.ID,
-            "name":            shop.Name,
-            "entrepreneur_id": shop.Entrepreneur.ID,
-            "category_id":     shop.ShopCategory.ID,
-            "category":        shop.ShopCategory.Name,
-            "open_status":     shop.OpenStatus,
-            "description":     shop.Description,
-            "photos":          shopPhotos,
-            "shop_open_dates": shopOpenDates,
-            "menus":           shopMenus,
-            "social_media":    socialMedias,
-        }
-        shopResponses = append(shopResponses, shopResponse)
-    }
-
-    return c.JSON(shopResponses)
+    return c.JSON(fiber.Map{"temp_shops": tempShops})
 }
 
+// GetTempShopsByEntrepreneurID retrieves TempShops for all shops owned by an entrepreneur
+func GetTempShopsByEntrepreneurID(db *gorm.DB, entrepreneurID uint) ([]fiber.Map, error) {
+	var shops []model.Shop
+	if err := db.Where("entrepreneur_id = ?", entrepreneurID).Find(&shops).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve shops: %w", err)
+	}
+
+	if len(shops) == 0 {
+		return nil, fmt.Errorf("no shops found for entrepreneur_id: %d", entrepreneurID)
+	}
+
+	var tempShops []model.TempShop
+	var tempShopResponses []fiber.Map
+
+	// Collect Shop IDs
+	var shopIDs []uint
+	for _, shop := range shops {
+		shopIDs = append(shopIDs, shop.ID)
+	}
+
+	// Fetch all TempShops for the given shop IDs
+	if err := db.Where("shop_id IN (?)", shopIDs).Find(&tempShops).Error; err != nil {
+		return nil, fmt.Errorf("failed to retrieve temp shops: %w", err)
+	}
+
+	for _, tempShop := range tempShops {
+		if tempShop.ShopID == nil {
+			continue
+		}
+		shopID := *tempShop.ShopID
+
+		// Fetch related data
+		TempSocials, _ := GetTempSocialsByShopID(db, shopID)
+		tempMenus, _ := getMenuForTempByShopID(db, shopID)
+		photoData, _ := getPhotoForTempByShopID(db, shopID)
+		tempTimes, _ := GetTempTimeByShopID(db, shopID)
+		shopOpenDates, _ := GetShopOpenDateForTempByShopID(db, shopID)
+
+		// Extract data from maps
+		photosShop, _ := photoData["photos_shop"].([]fiber.Map)
+		photosMenu, _ := photoData["photos_menu"].([]fiber.Map)
+		deleteSocials, _ := TempSocials["deleteSocials"].([]fiber.Map)
+		socials, _ := TempSocials["socials"].([]fiber.Map)
+		addTime, _ := tempTimes["addTime"].([]fiber.Map)
+		editTime, _ := tempTimes["editTime"].([]fiber.Map)
+		deleteTime, _ := tempTimes["deleteTime"].([]fiber.Map)
+
+		// Construct the response
+		tempShopResponses = append(tempShopResponses, fiber.Map{
+			"id":            tempShop.TempID,
+            "entrepreneur_id":entrepreneurID,
+			"name":          tempShop.Name,
+			"shop_id":       shopID,
+			"deleteSocials": deleteSocials,
+			"socials":       socials,
+			"menus":         tempMenus,
+			"photos_shop":   photosShop,
+			"photos_menu":   photosMenu,
+			"addTime":       addTime,
+			"editTime":      editTime,
+			"deleteTime":    deleteTime,
+			"time":          shopOpenDates,
+		})
+	}
+
+	return tempShopResponses, nil
+}
 
 func GetShopDetailsByEntrepreneurID(db *gorm.DB, c *fiber.Ctx) error {
 	// Parse Entrepreneur ID from request parameters
