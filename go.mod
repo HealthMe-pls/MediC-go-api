@@ -24,6 +24,7 @@ require (
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/redis/go-redis/v9 v9.7.1 // indirect
+	golang.org/x/oauth2 v0.28.0 // indirect
 	gorm.io/driver/sqlite v1.5.7 // indirect
 )
 

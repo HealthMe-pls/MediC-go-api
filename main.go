@@ -6,19 +6,41 @@ import (
 	"log"
 	"os"
 	"time"
-	"github.com/HealthMe-pls/medic-go-api/middleware"
-	"github.com/HealthMe-pls/medic-go-api/database"	
+	"context"
 	"github.com/HealthMe-pls/medic-go-api/controller"
+	"github.com/HealthMe-pls/medic-go-api/database"
+	"github.com/HealthMe-pls/medic-go-api/middleware"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
+var oauth2Config oauth2.Config
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Warning: No .env file found")
+	}
+
+	oauth2Config = oauth2.Config{
+		ClientID:     os.Getenv("INFOMANIAK_CLIENT_ID"),
+		ClientSecret: os.Getenv("INFOMANIAK_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("INFOMANIAK_REDIRECT_URL"),
+		Scopes:       []string{"profile", "email"},
+		Endpoint:     oauth2.Endpoint{
+			AuthURL:  "https://api.infomaniak.com/oauth2/authorize",
+			TokenURL: "https://api.infomaniak.com/oauth2/token",
+		},
+	}
+}
 func main() {
+	
 	// db connection section
 	db := SetupDatabase()
 	database.ConnectRedis()
@@ -332,9 +354,59 @@ func main() {
 		return c.JSON(fiber.Map{"message": "Welcome to the Entrepreneur Dashboard"})
 	})
 
-	app.Get("/dashboard/admin", middleware.AuthLoginAdmin, func(c *fiber.Ctx) error {
+	app.Get("/admin/dashboard", middleware.AuthLoginAdmin, func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"message": "Welcome to the Admin Dashboard"})
 	})
+
+	
+	app.Post("/login", func(c *fiber.Ctx) error {
+		var body struct {
+		  Email    string `json:"email"`
+		  Password string `json:"password"`
+		}
+	  
+		// รับข้อมูลจาก frontend
+		if err := c.BodyParser(&body); err != nil {
+		  return c.Status(fiber.StatusBadRequest).SendString("Invalid request body")
+		}
+	  
+		// เชื่อมต่อกับ Infomaniak OAuth และขอ authorization code
+		// ถ้าการตรวจสอบ email และ password สำเร็จ
+		authURL := oauth2Config.AuthCodeURL("randomstate", oauth2.AccessTypeOffline)
+	  
+		// ส่ง redirect ไปที่ Infomaniak login
+		return c.Redirect(authURL)
+	  })
+	  
+
+	  app.Post("/callback", func(c *fiber.Ctx) error {
+		var body struct {
+		  Code string `json:"code"`
+		}
+		
+		// รับ code จาก frontend
+		if err := c.BodyParser(&body); err != nil {
+		  return c.Status(fiber.StatusBadRequest).SendString("Invalid request body")
+		}
+	  
+		// แลกเป็น accessToken
+		token, err := oauth2Config.Exchange(context.Background(), body.Code)
+		if err != nil {
+		  return c.Status(fiber.StatusInternalServerError).SendString("Failed to exchange code for token")
+		}
+	  
+		// ส่ง token กลับไปที่ frontend
+		return c.JSON(fiber.Map{
+		  "token": token.AccessToken,
+		})
+	  })
+	  
+
+	  app.Post("/logout", func(c *fiber.Ctx) error {
+		// ลบข้อมูลการเข้าสู่ระบบ (เช่น clear session หรือ token)
+		return c.SendString("Logged out successfully")
+	  })
+	  
 	app.Listen(":8080")
 
 }

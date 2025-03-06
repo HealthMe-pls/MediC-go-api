@@ -31,17 +31,3 @@ func ConnectRedis() {
 	log.Println("Connected to Redis!")
 }
 
-// Add an allowed domain to Redis
-func AddAllowedDomain(domain string) error {
-	return RedisClient.SAdd(ctx, "allowed_domains", domain).Err()
-}
-
-// Remove an allowed domain from Redis
-func RemoveAllowedDomain(domain string) error {
-	return RedisClient.SRem(ctx, "allowed_domains", domain).Err()
-}
-
-// Get all allowed domains from Redis
-func GetAllowedDomains() ([]string, error) {
-	return RedisClient.SMembers(ctx, "allowed_domains").Result()
-}
