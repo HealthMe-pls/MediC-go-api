@@ -226,3 +226,64 @@ func GetShopDetailsByEntrepreneurID(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(shopResponses)
 }
+func GetEntrepreneurByIDLogin(db *gorm.DB, c *fiber.Ctx) error {
+    // Get the JWT token from the Authorization header
+    tokenString := c.Get("Authorization")
+    if tokenString == "" {
+        fmt.Println("Missing token")
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
+    }
+
+    // Remove "Bearer " prefix if present
+    if len(tokenString) > len("Bearer ") && tokenString[:len("Bearer ")] == "Bearer " {
+        tokenString = tokenString[len("Bearer "):]
+    } else {
+        fmt.Println("Invalid token format")
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token format"})
+    }
+
+    // Parse and validate the token
+    token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+        if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+            fmt.Println("Unexpected signing method")
+            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+        }
+        return []byte("your_secret_key"), nil
+    })
+
+    if err != nil || !token.Valid {
+        fmt.Println("Invalid or expired token:", err)
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid or expired token"})
+    }
+
+    // Extract entrepreneur ID from token
+    claims, ok := token.Claims.(jwt.MapClaims)
+    if !ok {
+        fmt.Println("Invalid token claims")
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token claims"})
+    }
+
+    entrepreneurName, ok := claims["username"].(string)
+    if !ok {
+        fmt.Println("Entrepreneur name not found in token")
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Entrepreneur ID missing in token"})
+    }
+
+    // Query the database for the entrepreneur with the extracted ID
+    var entrepreneur model.Entrepreneur
+    if err := db.Where("username = ?", entrepreneurName).First(&entrepreneur).Error; err != nil {
+        fmt.Println("Entrepreneur not found:", err)
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Entrepreneur not found"})
+    }
+	decryptedPassword, err := DecryptPassword(entrepreneur.Password)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   "Failed to decrypt password",
+				"details": err.Error(),
+			})
+		}
+	entrepreneur.Password = decryptedPassword
+
+    // If successful, return the entrepreneur data as a JSON response
+    return c.JSON(entrepreneur)
+}

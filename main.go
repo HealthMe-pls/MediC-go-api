@@ -107,6 +107,7 @@ func main() {
 	//entrepreneur
 	// app.Get("/entrepreneur", func(c *fiber.Ctx) error { return controller.GetEntrepreneur(db, c) })
 	app.Get("/entrepreneur", func(c *fiber.Ctx) error { return controller.GetAllEntrepreneur(db, c) })
+	app.Get("/entrepreneurGetbyId", func(c *fiber.Ctx) error { return controller.GetEntrepreneurByIDLogin(db, c) })
 
 	app.Get("/entrepreneur/:id", func(c *fiber.Ctx) error { return controller.GetEntrepreneurByID(db, c) })
 	app.Post("/entrepreneur", func(c *fiber.Ctx) error { return controller.Register(db, c) })
