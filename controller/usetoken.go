@@ -113,7 +113,7 @@ func GetTempShopsByEntrepreneurID(db *gorm.DB, entrepreneurID uint) ([]fiber.Map
 		// Extract data from maps
 		photosShop, _ := photoData["photos_shop"].([]fiber.Map)
 		photosMenu, _ := photoData["photos_menu"].([]fiber.Map)
-		deleteSocials, _ := TempSocials["deleteSocials"].([]fiber.Map)
+
 		socials, _ := TempSocials["socials"].([]fiber.Map)
 		addTime, _ := tempTimes["addTime"].([]fiber.Map)
 		editTime, _ := tempTimes["editTime"].([]fiber.Map)
@@ -127,7 +127,6 @@ func GetTempShopsByEntrepreneurID(db *gorm.DB, entrepreneurID uint) ([]fiber.Map
 			"description":	 tempShop.Description,
 			"category_id":	 tempShop.ShopCategoryID,
 			"shop_id":       shopID,
-			"deleteSocials": deleteSocials,
 			"socials":       socials,
 			"menus":         tempMenus,
 			"photos_shop":   photosShop,

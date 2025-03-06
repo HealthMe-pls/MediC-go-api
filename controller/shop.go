@@ -459,7 +459,7 @@ func UpdateTempShopByShopID(db *gorm.DB, c *fiber.Ctx) error {
 			"details": err.Error(),
 		})
 	}
-
+	tempShop.Status = "Waiting"
 	// Save updated TempShop
 	if result := db.Save(&tempShop); result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

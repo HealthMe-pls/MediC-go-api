@@ -329,8 +329,6 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 			})
 		}
 
-		// Extract social media data
-		deleteSocials, _ := TempSocials["deleteSocials"].([]fiber.Map)
 		socials, _ := TempSocials["socials"].([]fiber.Map)
 
 		// Extract time data
@@ -344,7 +342,6 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 			"description":	 tempShop.Description,
 			"category_id":	 tempShop.ShopCategoryID,
 			"shop_id":       shopID,
-			"deleteSocials": deleteSocials,
 			"socials":       socials,
 			"menus":         tempMenus,  // Include menus in the response
 			"photos_shop":   photosShop, // Photos directly related to the shop
@@ -365,90 +362,68 @@ func GetAllTempShopsWaiting(db *gorm.DB, c *fiber.Ctx) error {
 
 
 func GetTempSocialsByShopID(db *gorm.DB, shopID uint) (fiber.Map, error) {
-	var deleteSocials []model.SocialMedia
-	var socials []model.SocialMedia
+    var socials []model.SocialMedia
 
-	// Subquery to get SocialIDs that exist in DeleteSocial
-	subQuery := db.Table("delete_socials").Select("social_id")
+    // Subquery to get SocialIDs that exist in DeleteSocial
+    subQuery := db.Table("delete_socials").Select("social_id")
 
-	// Query for deleted socials (public and in DeleteSocial)
-	if err := db.Where("shop_id = ? AND is_public = ? AND id IN (?)", shopID, true, subQuery).
-		Find(&deleteSocials).Error; err != nil {
-		return nil, err
-	}
+    // Query for socials that are not in DeleteSocial
+    if err := db.Where("shop_id = ? AND id NOT IN (?)", shopID, subQuery).
+        Find(&socials).Error; err != nil {
+        return nil, err
+    }
 
-	// Query for editable and added socials (public and NOT in DeleteSocial, or private)
-	if err := db.Where("shop_id = ? AND (is_public = ? AND id NOT IN (?) OR is_public = ?)", 
-		shopID, true, subQuery, false).
-		Find(&socials).Error; err != nil {
-		return nil, err
-	}
+    // Convert results to fiber.Map
+    socialsResult := make([]fiber.Map, len(socials))
+    for i, social := range socials {
+        socialsResult[i] = fiber.Map{
+            "id":        social.ID,
+            "name":      social.Name,
+            "platform":  social.Platform,
+            "link":      social.Link,
+            "shop_id":   social.ShopID,
+            "is_public": social.IsPublic,
+        }
+    }
 
-	// Convert results to fiber.Map
-	deleteResult := make([]fiber.Map, len(deleteSocials))
-	for i, social := range deleteSocials {
-		deleteResult[i] = fiber.Map{
-			"id":        social.ID,
-			"name":      social.Name,
-			"platform":  social.Platform,
-			"link":      social.Link,
-			"shop_id":   social.ShopID,
-			"is_public": social.IsPublic,
-		}
-	}
-
-	socialsResult := make([]fiber.Map, len(socials))
-	for i, social := range socials {
-		socialsResult[i] = fiber.Map{
-			"id":        social.ID,
-			"name":      social.Name,
-			"platform":  social.Platform,
-			"link":      social.Link,
-			"shop_id":   social.ShopID,
-			"is_public": social.IsPublic,
-		}
-	}
-
-	return fiber.Map{
-		"deleteSocials": deleteResult,
-		"socials":       socialsResult, // Combined editSocials & addSocials
-	}, nil
+    return fiber.Map{
+        "socials": socialsResult,
+    }, nil
 }
 func getMenuForTempByShopID(db *gorm.DB, shopID uint) ([]fiber.Map, error) {
-	var menus []model.ShopMenu
+    var menus []model.ShopMenu
 
-	// Subquery to get MenuIDs that exist in DeleteMenu
-	subQuery := db.Table("delete_menus").Select("menu_id")
+    // Subquery to get MenuIDs that exist in DeleteMenu
+    subQuery := db.Table("delete_menus").Select("menu_id")
 
-	// Query menus based on the conditions
-	if err := db.Where("(is_public = ? AND id NOT IN (?)) OR is_public = ?", true, subQuery, false).
-		Where("shop_id = ?", shopID).
-		Find(&menus).Error; err != nil {
-		return nil, err
-	}
+    // Query menus based on the conditions
+    if err := db.Where("shop_id = ? AND id NOT IN (?)", shopID, subQuery).
+        Find(&menus).Error; err != nil {
+        return nil, err
+    }
 
-	// Convert results to fiber.Map
-	var menuResults []fiber.Map
+    // Convert results to fiber.Map
+    var menuResults []fiber.Map
 
-	for _, menu := range menus {
-		// Get associated photos
-		photos, err := getPhotoForTempByMenuID(db, menu.ID)
-		if err != nil {
-			return nil, err
-		}
+    for _, menu := range menus {
+        // Get associated photos
+        photos, err := getPhotoForTempByMenuID(db, menu.ID)
+        if err != nil {
+            return nil, err
+        }
 
-		menuResults = append(menuResults, fiber.Map{
-			"id":                  menu.ID,
-			"product_name":        menu.ProductName,
-			"product_description": menu.ProductDescription,
-			"price":               menu.Price,
-			"shop_id":             menu.ShopID,
-			"is_public":           menu.IsPublic,
-			"photos":              photos,
-		})
-	}
+        menuResults = append(menuResults, fiber.Map{
+            "id":                  menu.ID,
+            "product_name":        menu.ProductName,
+            "product_description": menu.ProductDescription,
+            "price":               menu.Price,
+            "shop_id":             menu.ShopID,
+            "is_public":           menu.IsPublic,
+            "photos":              photos,
+        })
+    }
 
-	return menuResults, nil
+    return menuResults, nil
 }
 
 
