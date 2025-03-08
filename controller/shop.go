@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
+	"errors"
 	"github.com/HealthMe-pls/medic-go-api/model"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -401,9 +401,57 @@ func UpdateShopByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 	if result := db.Save(&shop); result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to update shop")
 	}
+	UpdateTempShopFromShop(db, shop.ID)
 
 	// Return the updated shop as a JSON response
 	return c.JSON(shop)
+}
+func UpdateTempShopFromShop(db *gorm.DB, shopID uint) error {
+	fmt.Println("🔍 Checking if TempShop exists for shop ID:", shopID)
+
+	var tempShop model.TempShop
+
+	// Check if a TempShop exists for this shopID
+	if err := db.Where("shop_id = ?", shopID).First(&tempShop).Error; err != nil {
+		// If TempShop does not exist, return without creating a new one
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			fmt.Println("⚠️ TempShop not found, skipping update.")
+			return nil // No update needed since TempShop doesn't exist
+		}
+		fmt.Println("❌ Failed to retrieve TempShop:", err)
+		return fmt.Errorf("failed to retrieve temp shop: %w", err)
+	}
+
+	fmt.Println("✅ TempShop found:", tempShop)
+
+	// Retrieve the current Shop data
+	var shop model.Shop
+	if err := db.Preload("ShopCategory").First(&shop, shopID).Error; err != nil {
+		fmt.Println("❌ Shop not found:", err)
+		return fmt.Errorf("shop not found: %w", err)
+	}
+
+	fmt.Println("📦 Shop data retrieved:", shop)
+
+	// Update TempShop with current Shop attributes
+	tempShop.Name = shop.Name
+	tempShop.Description = shop.Description
+
+	// Update ShopCategoryID explicitly
+	if tempShop.ShopCategoryID == nil || *tempShop.ShopCategoryID != shop.ShopCategoryID {
+		fmt.Println("🔄 Updating ShopCategoryID from", tempShop.ShopCategoryID, "to", shop.ShopCategoryID)
+		tempShop.ShopCategoryID = &shop.ShopCategoryID
+	}
+
+	// Save the updates to the database
+	if err := db.Model(&tempShop).Updates(tempShop).Error; err != nil {
+		fmt.Println("❌ Failed to update TempShop:", err)
+		return fmt.Errorf("failed to update temp shop: %w", err)
+	}
+
+	fmt.Println("✅ TempShop updated successfully!")
+
+	return nil
 }
 
 
