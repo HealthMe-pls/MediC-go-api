@@ -379,7 +379,7 @@ func CreateShopWithTemp(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 func UpdateShopByAdmin(db *gorm.DB, c *fiber.Ctx) error {
-	// Get the shop ID from the URL
+	// Get the shop ID parameter from the URL
 	id := c.Params("id")
 	var shop model.Shop
 
@@ -389,55 +389,24 @@ func UpdateShopByAdmin(db *gorm.DB, c *fiber.Ctx) error {
 			"error":   "Shop not found",
 			"details": err.Error(),
 		})
+		// return c.Status(fiber.StatusNotFound).SendString("Shop not found")
 	}
 
 	// Parse the updated details from the request body
-	var updatedShop model.Shop
-	if err := c.BodyParser(&updatedShop); err != nil {
+	if err := c.BodyParser(&shop); err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("Failed to parse request body")
 	}
 
-	// Update shop fields
-	shop.Name = updatedShop.Name
-	shop.ShopCategoryID = updatedShop.ShopCategoryID
-	shop.OpenStatus = updatedShop.OpenStatus
-	shop.Description = updatedShop.Description
-
 	// Save the updated shop details to the database
-	if err := db.Save(&shop).Error; err != nil {
+	if result := db.Save(&shop); result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).SendString("Failed to update shop")
 	}
 
-	// Update TempShop entries that have the same ShopID
-	var tempShops []model.TempShop
-	if err := db.Where("shop_id = ?", shop.ID).Find(&tempShops).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   "Failed to retrieve temp shops",
-			"details": err.Error(),
-		})
-	}
-
-	// Update each TempShop with the new details
-	for _, tempShop := range tempShops {
-		tempShop.Name = updatedShop.Name
-		tempShop.ShopCategoryID = &updatedShop.ShopCategoryID
-		tempShop.Description = updatedShop.Description
-
-		if err := db.Save(&tempShop).Error; err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error":   "Failed to update temp shop",
-				"details": err.Error(),
-			})
-		}
-	}
-
 	// Return the updated shop as a JSON response
-	return c.JSON(fiber.Map{
-		"message":   "Shop and associated TempShops updated successfully",
-		"shop":      shop,
-		"tempShops": tempShops,
-	})
+	return c.JSON(shop)
 }
+
+
 
 // UpdateTempShopByShopID updates an existing TempShop by ShopID
 func UpdateTempShopByShopID(db *gorm.DB, c *fiber.Ctx) error {
