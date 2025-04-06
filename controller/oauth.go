@@ -1,103 +1,56 @@
 package controller
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
 	"log"
-	"github.com/golang-jwt/jwt/v5"
-	"time"
-	"github.com/gorilla/mux"
+	"github.com/gofiber/fiber/v2"
+    "golang.org/x/oauth2"
+	"context"
+	"os"
 )
 
-// Define the expected structure for login request
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+var infomaniakConfig = &oauth2.Config{
+    ClientID:     os.Getenv("INFOMANIAK_CLIENT_ID"),
+    ClientSecret: os.Getenv("INFOMANIAK_CLIENT_SECRET"),
+    RedirectURL:  "http://localhost:80/auth/callback", // Frontend callback
+    Endpoint: oauth2.Endpoint{
+        AuthURL:  "https://login.infomaniak.com/oauth2/authorize",
+        TokenURL: "https://login.infomaniak.com/oauth2/token",
+    },
+    Scopes:       []string{"email", "profile"},
 }
 
-// Define the response structure
-type LoginResponse struct {
-	Success bool   `json:"success"`
-	Token   string `json:"token,omitempty"`
-	Error   string `json:"error,omitempty"`
+
+func loginInfomaniak(c *fiber.Ctx) error {
+    url := infomaniakConfig.AuthCodeURL("state", oauth2.AccessTypeOffline)
+    return c.Redirect(url)
 }
 
-// Handle Login request
-func LoginAdmin(w http.ResponseWriter, r *http.Request) {
-	// Decode the request body into LoginRequest
-	var loginReq LoginRequest
-	err := json.NewDecoder(r.Body).Decode(&loginReq)
-	if err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
+func callbackInfomaniak(c *fiber.Ctx) error {
+    code := c.Query("code")
+    if code == "" {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Code not found"})
+    }
 
-	// Now that you have the email and password, authenticate them
-	// You can implement actual authentication logic here (e.g., verify with Infomaniak)
-	token, err := authenticateUser(loginReq.Email, loginReq.Password)
-	if err != nil {
-		// If authentication fails, send an error response
-		resp := LoginResponse{
-			Success: false,
-			Error:   err.Error(),
-		}
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
+    token, err := infomaniakConfig.Exchange(context.Background(), code)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get token"})
+    }
 
-	// If authentication is successful, return a success response with the token
-	resp := LoginResponse{
-		Success: true,
-		Token:   token,
-	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
-}
+    client := infomaniakConfig.Client(context.Background(), token)
+    resp, err := client.Get("https://api.infomaniak.com/userinfo")
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get user info"})
+    }
 
-// Simulate user authentication (replace with actual logic)
-func authenticateUser(email, password string) (string, error) {
-	// Placeholder logic: Check the credentials and return a mock token
-	// Replace with Infomaniak OAuth2 or your own authentication mechanism
-	if email == "admin@sang.com" && password == "password123" {
-		return "mock-jwt-token", nil // Return a mock token on success
-	}
-	return "", fmt.Errorf("invalid credentials")
+    defer resp.Body.Close()
+    return c.JSON(fiber.Map{"token": token.AccessToken})
 }
 
 func main() {
-	r := mux.NewRouter()
+    app := fiber.New()
 
-	// Define the login route
-	r.HandleFunc("/api/auth/admin", LoginAdmin).Methods("POST")
+    app.Get("/auth/login", loginInfomaniak)
+    app.Get("/auth/callback", callbackInfomaniak)
 
-	// Start the server
-	log.Fatal(http.ListenAndServe(":8080", r))
-}
-
-// Example function to generate a JWT token
-func GenerateJWT(email string) (string, error) {
-	// Define token expiration time
-	expirationTime := time.Now().Add(24 * time.Hour)
-	
-	// Create the JWT claims
-	claims := &jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(expirationTime),
-		Issuer:    "your-app-name", // Replace with your app name or domain
-		Subject:   email,
-	}
-
-	// Create a new JWT token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	
-	// Replace with your secret key
-	secretKey := []byte("your-secret-key")
-	
-	// Sign the token and return it
-	signedToken, err := token.SignedString(secretKey)
-	if err != nil {
-		return "", err
-	}
-	return signedToken, nil
+    log.Fatal(app.Listen(":8080"))
 }
